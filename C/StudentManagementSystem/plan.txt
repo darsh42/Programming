@@ -1,0 +1,14 @@
+struct student:
+  StudentID
+  First Name
+  Last Name
+  DOB
+  Course
+  Year
+  Grades
+    1st year
+    2nd Year
+    3rd Year
+
+
+Hashmap

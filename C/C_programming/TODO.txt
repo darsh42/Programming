@@ -1,0 +1,12 @@
+# skiped problems
+
+Chapter 2:
+  Bitwise Operators:
+  2-7
+  2-8
+
+Chapter 3:
+  While and For loops:
+  3-3
+  Do, while loops:
+  3-4
