@@ -1,0 +1,29 @@
+/*
+Pointers are used when the size of the data stored is variable
+  
+storage size NOT varible
+  customer record:
+    name - 50 bytes - start of record
+    address - 50 bytes - start + 50 bytes
+    age - 4 bytes - start + 100 bytes
+    id - 4 bytes - start + 104 bytes
+
+storage number IS variable
+  customer record:
+    name pointer - 4 bytes - start of record, mem location of data
+    address pointer - 4 bytes - start + 4 bytes
+    age - 4 bytes - start + 8 bytes
+    id - 4 bytes - start + 12 bytes
+*/
+
+/*
+ADDRESSING MODES
+
+IMMEDIATE - directly parse value to CPU
+REGISTER - loads data from register in instruction
+INDEXED - contains start address AND index from start address
+INDIRECT - pointer to register which holds the pointer to data
+BASE POINTER - SIMILAIR to INDIRECT but, offset is added to register before lookup
+
+*/
+

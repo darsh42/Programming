@@ -1,0 +1,11 @@
+READING ORDER:
+
+- Front Matter
+- Building Abstractions with Procedures
+- Building Abstractions with Data
+- Modularity, Objects and Data
+- Metalinguistic Abstraction
+- Computing with Register Machines
+- Refrences
+- List of Exercises
+- Index

@@ -1,0 +1,315 @@
+
+CLI_upper.o:     file format elf32-i386
+
+
+Disassembly of section .text:
+
+00000000 <_start>:
+
+    .globl _start
+_start:
+    # START PROGRAM ;;
+    # SAVE stack pointer ;;
+    movl %esp, %ebp
+   0:	89 e5                	mov    %esp,%ebp
+
+    # Allocate space for file descriptors on stack
+    subl $ST_SIZE_RESERVE, %esp
+   2:	83 ec 08             	sub    $0x8,%esp
+
+    # check for argument number
+    # no argument goto STD in and out
+    cmpl $1, ST_ARGC(%ebp)
+   5:	83 7d 00 01          	cmpl   $0x1,0x0(%ebp)
+    je STD_files
+   9:	74 4d                	je     58 <STD_IN>
+
+    # if 2 arguments are found go ro read files
+    cmpl $3, ST_ARGC(%ebp)
+   b:	83 7d 00 03          	cmpl   $0x3,0x0(%ebp)
+    je open_files
+   f:	74 05                	je     16 <open_fd_in>
+
+    jmp error
+  11:	e9 e0 00 00 00       	jmp    f6 <error>
+
+00000016 <open_fd_in>:
+
+open_files:
+open_fd_in:
+    # OPEN INPUT FILE ;;
+    # sys call in %eax
+    movl $SYS_OPEN, %eax
+  16:	b8 05 00 00 00       	mov    $0x5,%eax
+
+    #  input filename
+    movl ST_ARGV_1(%ebp), %ebx
+  1b:	8b 5d 08             	mov    0x8(%ebp),%ebx
+
+    # read only flag
+    movl $O_RDONLY, %ecx
+  1e:	b9 00 00 00 00       	mov    $0x0,%ecx
+
+    # move permission
+    movl $0666, %edx
+  23:	ba b6 01 00 00       	mov    $0x1b6,%edx
+
+    # SYS call Linux
+    int $LINUX_SYSCALL
+  28:	cd 80                	int    $0x80
+
+0000002a <handle_fd_in>:
+
+handle_fd_in:
+    # if the file descriptor
+    # is negetive
+    cmpl $0, %eax
+  2a:	83 f8 00             	cmp    $0x0,%eax
+    jle error
+  2d:	0f 8e c3 00 00 00    	jle    f6 <error>
+
+    # save file descriptor
+    movl %eax, ST_FD_IN(%ebp)
+  33:	89 45 fc             	mov    %eax,-0x4(%ebp)
+
+00000036 <open_fd_out>:
+
+open_fd_out:
+    #  OPEN OUTPUT FILE ;;
+    movl $SYS_OPEN, %eax
+  36:	b8 05 00 00 00       	mov    $0x5,%eax
+
+    movl ST_ARGV_2(%ebp), %ebx
+  3b:	8b 5d 0c             	mov    0xc(%ebp),%ebx
+
+    movl $O_CREAT_WRONLY_TRUNC, %ecx
+  3e:	b9 41 06 00 00       	mov    $0x641,%ecx
+
+    movl $0666, %edx
+  43:	ba b6 01 00 00       	mov    $0x1b6,%edx
+
+    int $LINUX_SYSCALL
+  48:	cd 80                	int    $0x80
+
+0000004a <handle_fd_out>:
+
+handle_fd_out:
+    # if the file descriptor
+    # is negetive
+    cmpl $0, %eax
+  4a:	83 f8 00             	cmp    $0x0,%eax
+    jle error
+  4d:	0f 8e a3 00 00 00    	jle    f6 <error>
+
+    movl %eax, ST_FD_OUT(%ebp)
+  53:	89 45 f8             	mov    %eax,-0x8(%ebp)
+    jmp read_loop_begin
+  56:	eb 14                	jmp    6c <read_loop_begin>
+
+00000058 <STD_IN>:
+
+STD_files:
+STD_IN:
+    # Save STD in FD
+    movl $STDIN, BF_FD_IN
+  58:	c7 05 f4 01 00 00 00 	movl   $0x0,0x1f4
+  5f:	00 00 00 
+
+00000062 <STD_OUT>:
+STD_OUT:
+    # Save STD out FD
+    movl $STDOUT, BF_FD_OUT
+  62:	c7 05 f5 01 00 00 01 	movl   $0x1,0x1f5
+  69:	00 00 00 
+
+0000006c <read_loop_begin>:
+
+
+read_loop_begin:
+
+    #  READ BLOCK FROM SYSTEM
+    movl $SYS_READ, %eax
+  6c:	b8 03 00 00 00       	mov    $0x3,%eax
+
+    # get the input file descriptor
+    movl ST_FD_IN(%ebp), %ebx
+  71:	8b 5d fc             	mov    -0x4(%ebp),%ebx
+
+    # specify the buffer
+    movl $BUFFER_DATA, %ecx
+  74:	b9 00 00 00 00       	mov    $0x0,%ecx
+
+    # specify the size of buffer
+    movl $BUFFER_SIZE, %edx
+  79:	ba f4 01 00 00       	mov    $0x1f4,%edx
+
+    # SYSCALL
+    int $LINUX_SYSCALL
+  7e:	cd 80                	int    $0x80
+
+    # EXIT if end is reached
+    cmpl $END_OF_FILE, %eax
+  80:	83 f8 00             	cmp    $0x0,%eax
+    jle end_loop
+  83:	7e 22                	jle    a7 <end_loop>
+
+00000085 <continue_read_loop>:
+
+
+continue_read_loop:
+    # CONVERT BLOCK TO UPPER ;;
+    # Parameter ;;
+    pushl $BUFFER_DATA          # push location of buffer
+  85:	68 00 00 00 00       	push   $0x0
+    pushl %eax                  # push size of buffer, read call returns
+  8a:	50                   	push   %eax
+                                # number of bytes read by system
+    call convert_to_upper       # call converter function
+  8b:	e8 37 00 00 00       	call   c7 <convert_to_upper>
+    popl %eax                   # get the buffer size back
+  90:	58                   	pop    %eax
+                                # READ only returns the number of bytes read
+    addl $4, %esp               # reset stack position
+  91:	83 c4 04             	add    $0x4,%esp
+
+    # WRITING BLOCK TO OUTPUT FILE;;
+    movl %eax, %edx             # size of buffer
+  94:	89 c2                	mov    %eax,%edx
+    movl $SYS_WRITE, %eax       # write sys call
+  96:	b8 04 00 00 00       	mov    $0x4,%eax
+    movl ST_FD_OUT(%ebp), %ebx  # filename
+  9b:	8b 5d f8             	mov    -0x8(%ebp),%ebx
+    movl $BUFFER_DATA, %ecx
+  9e:	b9 00 00 00 00       	mov    $0x0,%ecx
+
+    int $LINUX_SYSCALL
+  a3:	cd 80                	int    $0x80
+
+    jmp read_loop_begin
+  a5:	eb c5                	jmp    6c <read_loop_begin>
+
+000000a7 <end_loop>:
+end_loop:
+    # CLOSE FILES ;;
+    # NOTE:    no need for error checking
+    #          as errors do not mean much here
+
+    movl $SYS_CLOSE, %EAX
+  a7:	b8 06 00 00 00       	mov    $0x6,%eax
+    movl ST_FD_OUT(%ebp), %eb$x
+  ac:	8b 5d f8             	mov    -0x8(%ebp),%ebx
+    int $LINUX_SYSCALL
+  af:	cd 80                	int    $0x80
+
+    movl $SYS_CLOSE, %eax
+  b1:	b8 06 00 00 00       	mov    $0x6,%eax
+    movl ST_FD_IN(%ebp), %ebx
+  b6:	8b 5d fc             	mov    -0x4(%ebp),%ebx
+    int $LINUX_SYSCALL
+  b9:	cd 80                	int    $0x80
+
+    # EXIT ;;
+    movl $SYS_EXIT, %eax
+  bb:	b8 01 00 00 00       	mov    $0x1,%eax
+    movl $0, %ebx
+  c0:	bb 00 00 00 00       	mov    $0x0,%ebx
+    int $LINUX_SYSCALL
+  c5:	cd 80                	int    $0x80
+
+000000c7 <convert_to_upper>:
+    # STACK STUFF ;;
+    .equ ST_BUFFER_LEN, 8       # Length of buffer
+    .equ ST_BUFFER, 12          # Actual buffer
+
+convert_to_upper:
+    pushl %ebp
+  c7:	55                   	push   %ebp
+    movl %esp, %ebp
+  c8:	89 e5                	mov    %esp,%ebp
+
+    # SET VARIABLES ;;
+    movl ST_BUFFER(%ebp), %eax
+  ca:	8b 45 0c             	mov    0xc(%ebp),%eax
+    movl ST_BUFFER_LEN(%ebp), %ebx
+  cd:	8b 5d 08             	mov    0x8(%ebp),%ebx
+
+    movl $0, %edi               # index in buffer
+  d0:	bf 00 00 00 00       	mov    $0x0,%edi
+
+    # if buffer is zero length
+    #      LEAVE
+    cmpl $0, %ebx
+  d5:	83 fb 00             	cmp    $0x0,%ebx
+    je end_convert_loop
+  d8:	74 18                	je     f2 <end_convert_loop>
+
+000000da <convert_loop>:
+
+convert_loop:
+    # get current byte
+    movb (%eax, %edi, 1), %cl
+  da:	8a 0c 38             	mov    (%eax,%edi,1),%cl
+
+    # go to next byte unless between a-z
+    cmpb $LOWERCASE_A, %cl
+  dd:	80 f9 61             	cmp    $0x61,%cl
+    jl next_byte
+  e0:	7c 0b                	jl     ed <next_byte>
+    cmpb $LOWERCASE_Z, %cl
+  e2:	80 f9 7a             	cmp    $0x7a,%cl
+    jg next_byte
+  e5:	7f 06                	jg     ed <next_byte>
+
+    # OTHERWISE convert to uppercase
+    addb $UPPER_CONVERSION, %cl
+  e7:	80 c1 e0             	add    $0xe0,%cl
+    # STORE new upper byte
+    movb %cl, (%eax, %edi, 1)
+  ea:	88 0c 38             	mov    %cl,(%eax,%edi,1)
+
+000000ed <next_byte>:
+
+next_byte:
+    incl %edi                   # increment index
+  ed:	47                   	inc    %edi
+    cmpl %edi, %ebx             # check if reached end of buffer length
+  ee:	39 fb                	cmp    %edi,%ebx
+    jne convert_loop            # if not loop
+  f0:	75 e8                	jne    da <convert_loop>
+
+000000f2 <end_convert_loop>:
+
+end_convert_loop:
+    # no return value as buffer modified
+    movl %ebp, %esp
+  f2:	89 ec                	mov    %ebp,%esp
+    popl %ebp
+  f4:	5d                   	pop    %ebp
+ret
+  f5:	c3                   	ret    
+
+000000f6 <error>:
+    # STACK STUFF
+    .equ TEXT, 8
+    .equ LEN, 12
+
+error:
+    movl $SYS_WRITE, %eax
+  f6:	b8 04 00 00 00       	mov    $0x4,%eax
+    movl $STD_OUT, %ebx
+  fb:	bb 62 00 00 00       	mov    $0x62,%ebx
+    movl $error_msg, %ecx
+ 100:	b9 00 00 00 00       	mov    $0x0,%ecx
+    movl $error_msg_len, %edx
+ 105:	ba 06 00 00 00       	mov    $0x6,%edx
+
+    int $LINUX_SYSCALL
+ 10a:	cd 80                	int    $0x80
+
+    movl $SYS_EXIT, %eax
+ 10c:	b8 01 00 00 00       	mov    $0x1,%eax
+    movl $1, %ebx
+ 111:	bb 01 00 00 00       	mov    $0x1,%ebx
+
+    int $LINUX_SYSCALL
+ 116:	cd 80                	int    $0x80

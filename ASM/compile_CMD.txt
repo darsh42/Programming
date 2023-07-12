@@ -1,0 +1,2 @@
+as filename.s -o filename.o --32
+ld filename.o -o filename -m elf_i386

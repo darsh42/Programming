@@ -13,7 +13,7 @@
 .section .text
 .globl _start
 _start:
-  pushl $5            # Push the first parameter on stack
+  pushl $4            # Push the first parameter on stack
   call factorial      # call factorial function
   addl $4, %esp       # reset stack pointer
 

@@ -1,0 +1,81 @@
+/*
+CHAPTER 2 REVIEW
+
+KNOW THE CONCEPTS:
+- fetch decode execute cycle
+  components used:
+    - Program counter
+    - instruction decoder
+    - databus
+    - general purpose registers
+    - ALU
+  how it is done:
+    - The program counter stores the location of the next instruction
+    - Decoder decodes the instructions
+      - what operation it is
+      - what data is used
+    - Databus is used to fetch the data from the memory locations
+    - General purpose registers recieve data from data bus and stores it
+    - ALU recieves data from the general purpose registers and completes the computation
+
+- General purpose registers
+  - Simply they store common values that are repeatedly being used by the computer
+  - IF they werent present then the computer would need to access the memory more frequently 
+    this would result in slower execution speeds and more computations
+
+- Representing numbers larger than 255
+  - 8 bit byte can max represent 255
+  - if 4, 8 bit bytes are combined to make a word
+    the max vaule represented will be 4294967296
+
+- Size of Rediters on x86
+  - 4 bytes can be stored inside the registers
+
+- Iterpretaion of data
+  - If Instruction pointer points at an address then it is seen as an instruction,
+    the computer has no way of knowing the difference between programs and data
+
+- Adressing modes
+  - IMMEDIATE - stores given value into ALU for operations
+  - DIRECT - adress given contains data
+  - INDIRECT - address given stores pointer to data
+  - INDEXED - contains start address and index from start address
+  - BASE POINTER - SIMILAIR to INDEXED but does addition in register
+    then looks up resulting pointer
+
+- Instruction pointer
+  specifies weather data is instruction or oparable data
+
+USE THE CONCEPTS:
+- record EMPLOYEE:
+    pointer NAME: 4 bytes - start
+    pointer ADDRESS: 4 bytes - start + 4
+    data DOB: 1 byte - start + 8
+    data number: 1 byte - start + 9
+
+- Use the BASE POINTER addressing mode, i would specify the starting position
+  and depending on the field accessed i would add the corresponding offset to the
+  starting value depending on which field was accessed.
+
+- MODE: INDEXED
+  BASE: 6512
+  INDEX REG: 5
+  MULTI: 4
+    memory accessed -> 6532
+
+- MODE: INDEXED
+  BASE: 123472
+  INDEX REG: 0
+  MULTI: 4
+    memory accessed -> 123472
+
+- MODE: INDEXED
+  BASE: 9123478
+  INDEX REG: 20
+  MULTI: 1
+    memory accessed -> 9123498
+
+GOING FURTHER:
+
+
+*/

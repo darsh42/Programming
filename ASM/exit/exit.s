@@ -22,7 +22,7 @@
 .section .text
 .globl _start
 _start:
-movl $1, %eax     # linux kernel command
+movl $123, %eax     # linux kernel command
                   # number (system call) for exiting
                   # a program
 
