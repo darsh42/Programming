@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define LINEBUF 34
+
 typedef struct box {
     char value;
     struct box *next;
@@ -11,7 +13,7 @@ void make_box(char value, box_t *top) {
     for (p = top; p->next != NULL; p = p->next)
         ;
     p->next = malloc(sizeof(box_t));
-    *p->next = (box_t) {value, NULL};
+    p->value = value;
     return;
 }
 
@@ -27,15 +29,16 @@ int main(int argc, char* argv[]) {
 
     box_t stacks[9];
 
-    char line[30];
+    char line[LINEBUF];
     FILE *fp;
 
     if ((fp = fopen(*++argv, "r")) == NULL) {fprintf(stderr, "Cannot open %s\n", *argv); return 1;}
 
-    for (int i = 0; fgets(line, 30, fp) != NULL; i++) {
+    for (int i = 0; fgets(line, LINEBUF, fp) != NULL; i++) {
         if (i < 9) {
-            for (int j = 1; j < 30; j += 3) {
-                if (line[j] != ' ') make_box(line[j], &stacks[(j - 1)/3]);
+            for (int j = 1; j < LINEBUF; j += 4) {
+                if (line[j] >= 'A' && line[j] <= 'Z')
+                    make_box(line[j], &stacks[(j - 1)/3]);
             }
         } else {
             break;

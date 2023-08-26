@@ -36,7 +36,7 @@
       (iter-GCD b (remainder a b))))
 
 (define (make-rat n d)
-  (let ((g ((if (> d 0) - +) (gdc n d))))
+  (let ((g ((if (< d 0) - +) (gdc n d))))
     (cons (/ n g) (/ d g))))
 
 (define (numer x) (car x))
@@ -66,7 +66,7 @@
 
 (define (point-equal? p1 p2)
   (and (= (- (abs (x-point p1)) (abs (x-point p2))) 0)
-       (= (- (abs (y-point p1) (abs (y-point p2)))) 0)))
+       (= (- (abs (y-point p1)) (abs (y-point p2))) 0)))
 
 (define (make-segment start-p end-p) (cons start-p end-p))
 
@@ -134,10 +134,8 @@
 
 (define (make-rect side-1 side-2 side-3 side-4)
   (define (equal-length? segment-1 segment-2)
-    (if (= (length-segment segment-1)
-           (length-segment segment-2))
-        #t
-        #f))
+    (= (length-segment segment-1)
+       (length-segment segment-2)))
   (define (connected? segment-1 segment-2)
     (cond ((point-equal? (start-segment segment-1) (start-segment segment-2)))
           ((point-equal? (end-segment segment-1) (end-segment segment-2)))
@@ -176,12 +174,15 @@
                             (common-points side-2 side-1))))))
         (else (display "points do not satify requirements to create rectangle"))))
 
-(define (make-rect-segment seg-1 seg-2)
-  (make-rect seg-1 seg-2))
+(define (make-rect-segment seg-1 seg-2 seg-3 seg-4)
+  (make-rect seg-1 seg-2 seg-3 seg-4))
 
 (define (make-rect-point p1 p2 p3 p4)
   (make-rect (make-segment p1 p2)
-             (make-segment p3 p4)))
+             (make-segment p2 p3)
+             (make-segment p3 p4)
+             (make-segment p4 p1)))
+
 
 (define (rect-seg-1 x)
   (car x))
@@ -190,14 +191,14 @@
   (cdr x))
 
 
-(make-rect (make-segment (make-point 0 0)
-                         (make-point 0 7))
-           (make-segment (make-point 0 7)
-                         (make-point 7 7))
-           (make-segment (make-point 7 7)
-                         (make-point 7 0))
-           (make-segment (make-point 7 0)
-                         (make-point 0 0)))
+(define rect (make-rect (make-segment (make-point 0 0)
+                                      (make-point 0 7))
+                        (make-segment (make-point 0 7)
+                                      (make-point 7 7))
+                        (make-segment (make-point 7 7)
+                                      (make-point 7 0))
+                        (make-segment (make-point 7 0)
+                                      (make-point 0 0))))
 
 ;
 ; Creating cons, car and cdr as pure procedures
@@ -489,15 +490,165 @@
                                  (- index 1)))))
 
 (define (reverse-list list)
-  (let ((l (length list))
-        (offset-max (round (/ 2 (length list)))))
-    (define (switch offset)
-      (let ((tmp) (sub-list list offset))
-        (append (sub-list list offset) (sub-list list (- length offset)))
-        (append (sub-list list (- length offset)) tmp)))
-    (define (iter offset)
-      (cond ((= l 0) (error "list has 0 length"))
-            ((= offset offset-max) (switch offset) list)
-            ((< offset offset-max) (switch offset) (iter (+ offset 1)))
-            (else (error "some issue has occured"))))
-    (iter 0)))
+  (define (iter orig rev)
+    (if (null? (cdr orig))
+        (cons (car orig) rev)
+        (iter (cdr orig)
+              (cons (car orig) rev))))
+  (iter list '()))
+
+; Exercise 2.19
+;
+; Re-Create the Count Change procedure acommodating coin lists
+
+(define (cc-list amount coin-values)
+  (define (first-denomination coins)        (car coin-values))
+  (define (except-first-denomination coins) (cdr coin-values))
+  (define (no-more? coins)                  (null? coin-values))
+  (cond ((= amount 0) 1)
+        ((or (< amount 0) (no-more? coin-values)) 0)
+        (else
+         (+ (cc-list amount
+                (except-first-denomination coin-values))
+            (cc-list (- amount
+                   (first-denomination coin-values))
+                coin-values)))))
+
+; Exercise 2.20
+;
+; Even-Odd parity
+
+(define (same-parity first . rest)
+  (define mod-res (remainder first 2))
+  (define (iter parity orig)
+    (if (null? orig)
+        parity
+        (if (= (remainder (car orig) 2) mod-res)
+            (iter (cons (car orig) parity) (cdr orig))
+            (iter parity (cdr orig)))))
+  (reverse (iter (list first) rest)))
+
+; Exercise 2.21
+;
+; Square list
+
+(define (inferior-map func items)
+  (if (null? items)
+      '()
+      (cons (func (car items))
+            (inferior-map func
+                          (cdr items)))))
+
+(define (square-list items)
+  (if (null? items)
+      '()
+      (cons (square (car items))
+            (square-list (cdr items)))))
+
+(define (square-list-map items)
+  (inferior-map square items))
+
+; Exercise 2.22
+;
+; Square lit iteration explanation
+;
+; 1) Louis is building the list from the bottom up and he
+;    starts by including the top element from the list first
+;
+; 2) This has no affect as all it is doing is changing the
+;    location where the reference to the next item is held
+
+
+; Exercise 2.23
+;
+; Implementation for procedure for-each
+
+(define (for-each func items)
+  (cond ((null? items) '())
+        (else (for-each func (cdr items))
+              (func (car items)))))
+
+; Count leaves procedure
+
+(define (count-leaves items)
+  (cond ((null? items) 0)
+        ((not (pair? items)) 1)
+        (else (+ (count-leaves (car items))
+                 (count-leaves (cdr items))))))
+
+; Exercise 2.24
+;
+; Skipped as it requires illustration
+
+
+; Exercise 2.25
+;
+; 1) cddadr
+; 2) caar
+; 3) caaaadr
+;
+; Give combinations of cars and cdrs for picking 7's
+
+; Exercise 2.26
+;
+; (define x (list 1 2 3))
+; (define y (list 4 5 6))
+;
+; (append x y) - (1 2 3 4 5 6)
+; (cons x y)   - ((1 2 3) 4 5 6)
+; (list x y)   - ((1 2 3) (4 5 6))
+
+; Exercise 2.27
+;
+; Deep-Reverse procedure
+
+(define (deep-reverse items)
+  (cond ((null? items) items)
+        ((not (pair? items)) items)
+        (else (cons (reverse (deep-reverse (car items)))
+                    (reverse (deep-reverse (cdr items)))))))
+
+(define (deep-reverse-list list)
+  (define (iter orig rev)
+    (cond ((null? orig) (cons (car orig) rev))
+          ((not (pair? orig)) orig)
+          (else (cons (iter (cdr orig)
+                            (cons (car orig) rev))
+                      (iter (car orig)
+                            (cons (cdr orig) rev))))))
+  (iter list '()))
+
+; Exercise 2.29
+;
+; binary mobile program
+
+(define (make-mobile left right)
+  (list left right))
+
+(define (make-branch length structure)
+  (list length structure))
+
+(define test-mobile
+  (make-mobile (make-branch 10 (make-mobile (make-branch 3 3)
+                                            (make-branch 7 4)))
+               (make-branch 8 (make-mobile (make-branch 4 (make-mobile (make-branch 3 7)
+                                                                       (make-branch 6 9)))
+                                           (make-branch 1 1)))))
+
+(define (left-branch mobile)
+  (car mobile))
+
+(define (right-branch mobile)
+  (cdr mobile))
+
+(define (branch-length branch)
+  (car branch))
+
+(define (branch-structure branch)
+  (cdr branch))
+
+(define (total-weight mobile)
+  (cond ((null? mobile) 0)
+        ((not (pair? mobile)) mobile)
+        (else (+ (total-weight (branch-structure (right-branch mobile)))
+                 (total-weight (branch-structure (left-branch mobile)))))))
