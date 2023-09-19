@@ -7,7 +7,7 @@
 #include <math.h>
 #include <SDL2/SDL.h>
 
-#define WIDTH  640
+#define WIDTH  1280
 #define HEIGHT 480
 #define GAME_WIDTH  640
 #define GAME_HEIGHT 480
@@ -19,7 +19,7 @@
 
 #define START_POSITION {GAME_WIDTH/2.0, GAME_HEIGHT/2.0}
 #define FOV 90.0
-#define RAYCOUNT WIDTH
+#define RAYCOUNT GAME_WIDTH
 #define LOOKSPEED M_PI/15
 
 bool init();

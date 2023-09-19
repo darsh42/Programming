@@ -1,6 +1,4 @@
 #include "raycaster.h"
-#include <SDL2/SDL_pixels.h>
-#include <SDL2/SDL_render.h>
 
 int map[MAP_HEIGHT][MAP_WIDTH] = {
 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
@@ -101,26 +99,27 @@ int main(void) {
         for (int i = -RAYCOUNT/2; i < RAYCOUNT/2; i++) {
             vec_t ray = add_vec('+', 3, pos, dir, mul_const(plane, (2.0*i)/RAYCOUNT));
 
-            vec_t sector_edge, step;
-            vec_t sector_map = {(int) pos.x, (int) pos.y};
-            vec_t delta_dist = (vec_t) {abs_double(1/ray.x), abs_double(1/ray.y)};
-
-            sector_map = (vec_t) {(int)ray.x, (int) ray.y};
+            // sector_edge is the distance from pos to the next immediate sector
+            // in-terms of pixels rather than sectors
+            vec_t sector_edge, step; 
+            // sector_map is the current map sector of the player, in terms of sectors
+            vec_t sector_map = (vec_t) {(int)(pos.x / MAP_WIDTH), (int)(pos.y / MAP_HEIGHT)};
+            vec_t delta_dist = (vec_t) {fabs(1/ray.x), fabs(1/ray.y)};
 
             if (dir.x < 0) {
                 step.x = -1;
-                sector_edge.x = pos.x - sector_map.x;
+                sector_edge.x = pos.x - sector_map.x * WIDTH;
             } else {
                 step.x = 1;
-                sector_edge.x = sector_map.x + 1.0 - pos.x;
+                sector_edge.x = (sector_map.x + 1.0) * WIDTH - pos.x;
             }
 
             if (dir.y < 0) {
                 step.y = -1;
-                sector_edge.y = pos.y - sector_map.y;
+                sector_edge.y = pos.y - sector_map.y * WIDTH;
             } else {
                 step.y = 1;
-                sector_edge.y = sector_map.y + 1.0 - pos.y;
+                sector_edge.y = (sector_map.y + 1.0) * WIDTH - pos.y;
             }
 
             bool hit = false;
@@ -136,18 +135,21 @@ int main(void) {
                     sector_map.y += step.y;
                     side = 1;
                 }
-
-                if (map[(int)sector_map.x][(int)sector_map.y] != 0) hit = true;
+                    
+                //int x = sector_map.x / 10, y = sector_map.y / 10;
+                
+                if (map[(int) sector_map.y][(int) sector_map.x] != 0) hit = true;
             }
+            printf("MAP SECTOR: {%f, %f}\n", sector_map.x, sector_map.y);
 
             int perp_wall_distance;
             if (side == 0) perp_wall_distance = sector_edge.x - delta_dist.x;
             if (side == 1) perp_wall_distance = sector_edge.y - delta_dist.y;
 
-            //if (side == 0)
-                //draw_vertical_line(perp_wall_distance, i + RAYCOUNT/2, 255, 0, 0);
-            //else
-                //draw_vertical_line(perp_wall_distance, i + RAYCOUNT/2, 0, 0, 255);
+            if (side == 0)
+                draw_vertical_line(perp_wall_distance, i + RAYCOUNT/2, 255, 0, 0);
+            else
+                draw_vertical_line(perp_wall_distance, i + RAYCOUNT/2, 0, 0, 255);
         }
 
         draw_debug(pos, dir);
@@ -176,8 +178,8 @@ int main(void) {
             }
         }
 
-        printf("player pos: (%f, %f)\n", pos.x, pos.y);
-        printf("player dir: (%f, %f)\n", dir.x, dir.y);
+        //printf("player pos: (%f, %f)\n", pos.x, pos.y);
+        //printf("player dir: (%f, %f)\n", dir.x, dir.y);
     }
 
     kill();
@@ -221,22 +223,30 @@ bool kill() {
 }
 
 void render(bool clear) {
-    if (clear) {SDL_SetRenderDrawColor(rend, 0, 0, 0, SDL_ALPHA_OPAQUE); SDL_RenderClear(rend);}
-    else       SDL_RenderPresent(rend);
+    if (clear) {
+        SDL_SetRenderDrawColor(rend, 0, 0, 0, SDL_ALPHA_OPAQUE);
+        SDL_RenderClear(rend);
+    }
+    else SDL_RenderPresent(rend);
 
     return;
 }
 
+// renders each vertical line in the raycaster loop
 void draw_vertical_line(double distance, int ray_num, int R, int G, int B) {
-    vec_t line[2] = {{ray_num, center_point.y + 30/distance},
-                     {ray_num, center_point.y - 30/distance}};
+    /*
+     * "30/distance" --> smaller distance == bigger line, larger distance == smaller line
+     */
+    // printf("Line distance: {RAYNUM: %d, PERPDISTANCE: %f}\n", ray_num, fabs(distance));
+    vec_t line[2] = {{ray_num + GAME_WIDTH, center_point.y + 30/fabs(distance)},
+                     {ray_num + GAME_WIDTH, center_point.y - 30/fabs(distance)}};
     SDL_SetRenderDrawColor(rend, R, G, B, SDL_ALPHA_OPAQUE);
     SDL_RenderDrawLine(rend, line[0].x, line[0].y, line[1].x, line[1].y);
     return;
 }
 
 void draw_debug(vec_t player_pos, vec_t player_dir) {
-    int x_step = WIDTH/MAP_WIDTH, y_step = HEIGHT/MAP_HEIGHT;
+    int x_step = DEBUG_WIDTH/MAP_WIDTH, y_step = DEBUG_HEIGHT/MAP_HEIGHT;
 
     for (int i = 0, y = 0; i < MAP_HEIGHT; i++, y += y_step) {
         for (int j = 0, x = 0; j < MAP_WIDTH; j++, x += x_step) {
@@ -254,5 +264,4 @@ void draw_debug(vec_t player_pos, vec_t player_dir) {
 
     SDL_SetRenderDrawColor(rend, 0, 255, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderDrawLine(rend, player_pos.x, player_pos.y, player_pos.x + player_dir.x, player_pos.y + player_dir.y);
-
 }

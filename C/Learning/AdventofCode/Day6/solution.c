@@ -44,16 +44,3 @@ char* read_file(char* filename) {
     fclose(fp);
     return buffer;
 }
-
-        /*
-        int found = 1;
-        for (int j = i; j < i + 14 && found == 1; j++) {
-            for (int k = i; k < i + 14 && found == 1; k++) {
-                if (j == k) continue;
-                if (source[j] == source[k]) {found = 0; goto notFound;}
-            }
-        }
-
-        notFound:
-        if (found == 1) { part1 = i+14; break;}
-        */

@@ -1,0 +1,278 @@
+[CPU] clock -> 2, X -> 2
+[Part 1]: 0
+[CPU] clock -> 4, X -> 7
+[Part 1]: 0
+[CPU] clock -> 5, X -> 7
+[Part 1]: 0
+[CPU] clock -> 7, X -> 6
+[Part 1]: 0
+[CPU] clock -> 8, X -> 6
+[Part 1]: 0
+[CPU] clock -> 10, X -> 9
+[Part 1]: 0
+[CPU] clock -> 12, X -> 38
+[Part 1]: 0
+[CPU] clock -> 14, X -> 37
+[Part 1]: 0
+[CPU] clock -> 16, X -> 16
+[Part 1]: 0
+[CPU] clock -> 18, X -> 21
+[Part 1]: 0
+[CPU] clock -> 19, X -> 21
+[Part 1]: 0
+[CPU] clock -> 21, X -> 1
+[Part 1]: 441
+[CPU] clock -> 23, X -> 22
+[Part 1]: 441
+[CPU] clock -> 25, X -> 24
+[Part 1]: 441
+[CPU] clock -> 27, X -> 32
+[Part 1]: 441
+[CPU] clock -> 29, X -> 31
+[Part 1]: 441
+[CPU] clock -> 30, X -> 31
+[Part 1]: 441
+[CPU] clock -> 31, X -> 31
+[Part 1]: 441
+[CPU] clock -> 32, X -> 31
+[Part 1]: 441
+[CPU] clock -> 33, X -> 31
+[Part 1]: 441
+[CPU] clock -> 35, X -> 37
+[Part 1]: 441
+[CPU] clock -> 37, X -> 36
+[Part 1]: 441
+[CPU] clock -> 39, X -> -1
+[Part 1]: 441
+[CPU] clock -> 41, X -> 39
+[Part 1]: 441
+[CPU] clock -> 43, X -> 29
+[Part 1]: 441
+[CPU] clock -> 45, X -> 4
+[Part 1]: 441
+[CPU] clock -> 47, X -> 9
+[Part 1]: 441
+[CPU] clock -> 49, X -> 11
+[Part 1]: 441
+[CPU] clock -> 51, X -> 16
+[Part 1]: 441
+[CPU] clock -> 52, X -> 16
+[Part 1]: 441
+[CPU] clock -> 53, X -> 16
+[Part 1]: 441
+[CPU] clock -> 54, X -> 16
+[Part 1]: 441
+[CPU] clock -> 56, X -> 37
+[Part 1]: 441
+[CPU] clock -> 58, X -> 17
+[Part 1]: 441
+[CPU] clock -> 60, X -> 19
+[Part 1]: 1461
+[CPU] clock -> 61, X -> 19
+[Part 1]: 1461
+[CPU] clock -> 63, X -> 22
+[Part 1]: 1461
+[CPU] clock -> 65, X -> 24
+[Part 1]: 1461
+[CPU] clock -> 67, X -> 19
+[Part 1]: 1461
+[CPU] clock -> 69, X -> 31
+[Part 1]: 1461
+[CPU] clock -> 71, X -> 34
+[Part 1]: 1461
+[CPU] clock -> 72, X -> 34
+[Part 1]: 1461
+[CPU] clock -> 74, X -> 36
+[Part 1]: 1461
+[CPU] clock -> 76, X -> 39
+[Part 1]: 1461
+[CPU] clock -> 78, X -> 37
+[Part 1]: 1461
+[CPU] clock -> 80, X -> 0
+[Part 1]: 1461
+[CPU] clock -> 82, X -> 1
+[Part 1]: 1461
+[CPU] clock -> 84, X -> 6
+[Part 1]: 1461
+[CPU] clock -> 86, X -> 9
+[Part 1]: 1461
+[CPU] clock -> 88, X -> 7
+[Part 1]: 1461
+[CPU] clock -> 90, X -> 9
+[Part 1]: 1461
+[CPU] clock -> 92, X -> 38
+[Part 1]: 1461
+[CPU] clock -> 94, X -> 16
+[Part 1]: 1461
+[CPU] clock -> 96, X -> 29
+[Part 1]: 1461
+[CPU] clock -> 97, X -> 29
+[Part 1]: 1461
+[CPU] clock -> 99, X -> 21
+[Part 1]: 1461
+[CPU] clock -> 101, X -> 15
+[Part 1]: 3582
+[CPU] clock -> 103, X -> 22
+[Part 1]: 3582
+[CPU] clock -> 105, X -> 24
+[Part 1]: 3582
+[CPU] clock -> 106, X -> 24
+[Part 1]: 3582
+[CPU] clock -> 108, X -> 31
+[Part 1]: 3582
+[CPU] clock -> 110, X -> 29
+[Part 1]: 3582
+[CPU] clock -> 112, X -> 34
+[Part 1]: 3582
+[CPU] clock -> 114, X -> 36
+[Part 1]: 3582
+[CPU] clock -> 116, X -> 10
+[Part 1]: 3582
+[CPU] clock -> 118, X -> -1
+[Part 1]: 3582
+[CPU] clock -> 119, X -> -1
+[Part 1]: 3582
+[CPU] clock -> 120, X -> -1
+[Part 1]: 3582
+[CPU] clock -> 122, X -> 5
+[Part 1]: 3582
+[CPU] clock -> 124, X -> 6
+[Part 1]: 3582
+[CPU] clock -> 126, X -> 7
+[Part 1]: 3582
+[CPU] clock -> 127, X -> 7
+[Part 1]: 3582
+[CPU] clock -> 129, X -> 11
+[Part 1]: 3582
+[CPU] clock -> 131, X -> 16
+[Part 1]: 3582
+[CPU] clock -> 132, X -> 16
+[Part 1]: 3582
+[CPU] clock -> 133, X -> 16
+[Part 1]: 3582
+[CPU] clock -> 135, X -> 14
+[Part 1]: 3582
+[CPU] clock -> 137, X -> 17
+[Part 1]: 3582
+[CPU] clock -> 138, X -> 17
+[Part 1]: 3582
+[CPU] clock -> 140, X -> 19
+[Part 1]: 5962
+[CPU] clock -> 142, X -> 24
+[Part 1]: 5962
+[CPU] clock -> 144, X -> 26
+[Part 1]: 5962
+[CPU] clock -> 146, X -> 4
+[Part 1]: 5962
+[CPU] clock -> 148, X -> 31
+[Part 1]: 5962
+[CPU] clock -> 150, X -> 30
+[Part 1]: 5962
+[CPU] clock -> 152, X -> 31
+[Part 1]: 5962
+[CPU] clock -> 154, X -> 36
+[Part 1]: 5962
+[CPU] clock -> 156, X -> 38
+[Part 1]: 5962
+[CPU] clock -> 157, X -> 38
+[Part 1]: 5962
+[CPU] clock -> 159, X -> -1
+[Part 1]: 5962
+[CPU] clock -> 161, X -> 21
+[Part 1]: 5962
+[CPU] clock -> 162, X -> 21
+[Part 1]: 5962
+[CPU] clock -> 164, X -> 6
+[Part 1]: 5962
+[CPU] clock -> 166, X -> 9
+[Part 1]: 5962
+[CPU] clock -> 168, X -> 7
+[Part 1]: 5962
+[CPU] clock -> 170, X -> 9
+[Part 1]: 5962
+[CPU] clock -> 172, X -> 7
+[Part 1]: 5962
+[CPU] clock -> 174, X -> 16
+[Part 1]: 5962
+[CPU] clock -> 176, X -> 19
+[Part 1]: 5962
+[CPU] clock -> 177, X -> 19
+[Part 1]: 5962
+[CPU] clock -> 179, X -> 21
+[Part 1]: 5962
+[CPU] clock -> 181, X -> 24
+[Part 1]: 9763
+[CPU] clock -> 183, X -> 22
+[Part 1]: 9763
+[CPU] clock -> 185, X -> 24
+[Part 1]: 9763
+[CPU] clock -> 186, X -> 24
+[Part 1]: 9763
+[CPU] clock -> 187, X -> 24
+[Part 1]: 9763
+[CPU] clock -> 188, X -> 24
+[Part 1]: 9763
+[CPU] clock -> 190, X -> 29
+[Part 1]: 9763
+[CPU] clock -> 192, X -> 12
+[Part 1]: 9763
+[CPU] clock -> 194, X -> 36
+[Part 1]: 9763
+[CPU] clock -> 196, X -> 29
+[Part 1]: 9763
+[CPU] clock -> 198, X -> 37
+[Part 1]: 9763
+[CPU] clock -> 200, X -> 1
+[Part 1]: 9763
+[CPU] clock -> 202, X -> 3
+[Part 1]: 9763
+[CPU] clock -> 204, X -> 6
+[Part 1]: 9763
+[CPU] clock -> 206, X -> 39
+[Part 1]: 9763
+[CPU] clock -> 208, X -> 7
+[Part 1]: 9763
+[CPU] clock -> 210, X -> 11
+[Part 1]: 9763
+[CPU] clock -> 212, X -> 12
+[Part 1]: 9763
+[CPU] clock -> 213, X -> 12
+[Part 1]: 9763
+[CPU] clock -> 215, X -> 17
+[Part 1]: 9763
+[CPU] clock -> 216, X -> 17
+[Part 1]: 9763
+[CPU] clock -> 217, X -> 17
+[Part 1]: 9763
+[CPU] clock -> 219, X -> 37
+[Part 1]: 9763
+[CPU] clock -> 221, X -> 22
+[Part 1]: 17940
+[CPU] clock -> 223, X -> 26
+[Part 1]: 17940
+[CPU] clock -> 224, X -> 26
+[Part 1]: 17940
+[CPU] clock -> 226, X -> 27
+[Part 1]: 17940
+[CPU] clock -> 227, X -> 27
+[Part 1]: 17940
+[CPU] clock -> 229, X -> 31
+[Part 1]: 17940
+[CPU] clock -> 231, X -> 37
+[Part 1]: 17940
+[CPU] clock -> 233, X -> 7
+[Part 1]: 17940
+[CPU] clock -> 235, X -> 37
+[Part 1]: 17940
+[CPU] clock -> 236, X -> 37
+[Part 1]: 17940
+[CPU] clock -> 237, X -> 37
+[Part 1]: 17940
+[CPU] clock -> 238, X -> 37
+[Part 1]: 17940
+[CPU] clock -> 239, X -> 37
+[Part 1]: 17940
+[CPU] clock -> 240, X -> 37
+[Part 1]: 17940
+[CPU] clock -> 240, X -> 37
+[Part 1]: 17940
