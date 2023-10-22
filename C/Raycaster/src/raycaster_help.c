@@ -1,4 +1,9 @@
 #include "raycaster.h"
+#include <SDL2/SDL_pixels.h>
+#include <SDL2/SDL_render.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 #define mapWidth 32
 #define mapHeight 24
 #define screenWidth 640
@@ -109,8 +114,6 @@ int main() {
 
         // draw_debug(posX, posY, dirX, dirY);
         draw_crosshair();
-
-        update_screen();
 
         render(false);
         SDL_Event event;
@@ -231,8 +234,6 @@ void update_screen() {
     }
 
     SDL_UnlockTexture(scr);
-
-    return;
 }
 
 // renders each vertical line in the raycaster loop
@@ -241,16 +242,16 @@ void draw_vertical_line(double line_height, int ray_num, int R, int G, int B) {
      * "30/distance" --> smaller distance == bigger line, larger distance == smaller line
      */
     //printf("Line distance: {RAYNUM: %d, PERPDISTANCE: %f}\n", ray_num, fabs(line_height/2));
-    //SDL_SetRenderDrawColor(rend, R, G, B, SDL_ALPHA_OPAQUE);
-    //SDL_RenderDrawLine(rend, ray_num, center - line_height/2, ray_num, center + line_height/2);
+    SDL_SetRenderDrawColor(rend, R, G, B, SDL_ALPHA_OPAQUE);
+    SDL_RenderDrawLine(rend, ray_num, center - line_height/2, ray_num, center + line_height/2);
 
-     int top = center - line_height/2, bottom = center + line_height/2;
-     for (int pixel = ray_num + top * GAME_WIDTH * 4; pixel <= ray_num + bottom * GAME_WIDTH * 4; pixel += ray_num + GAME_WIDTH * 4) {
-         screen[pixel + 0] = R;
-         screen[pixel + 1] = G;
-         screen[pixel + 2] = B;
-         screen[pixel + 3] = 0;
-     }
+     //int top = center - line_height/2, bottom = center + line_height/2;
+     //for (int pixel = ray_num + top * GAME_WIDTH * 4; pixel <= ray_num + bottom * GAME_WIDTH * 4; pixel += ray_num + GAME_WIDTH * 4) {
+     //    screen[pixel + 0] = R;
+     //    screen[pixel + 1] = G;
+     //    screen[pixel + 2] = B;
+     //    screen[pixel + 3] = 0;
+     //}
 
     return;
 }
