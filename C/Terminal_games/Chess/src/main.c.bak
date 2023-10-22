@@ -1,0 +1,193 @@
+#include "main.h"
+
+int num_taken_white = 0;
+int num_taken_black = 0;
+char taken_white[16];
+char taken_black[16];
+piece_t white[16];
+piece_t black[16];
+piece_t tmp;
+piece_t empty;
+piece_t *board[BRD_H * BRD_W];
+
+void init_game() {
+    //dummy piece
+    tmp = (piece_t) {'T', TMP, TMP, (pnt_t) {-1, -1}, NULL};
+    empty = (piece_t) {'E', EMPTY, EMPTY, (pnt_t) {-1, -1}, NULL};
+
+    for (int i = 0; i < BRD_H * BRD_W; i++)
+        board[i] = NULL;
+
+    white[0] = (piece_t) {'r', ROOK,   WHITE, (pnt_t) {0, 0}, &possible_moves_rook};
+    white[1] = (piece_t) {'k', KNIGHT, WHITE, (pnt_t) {0, 1}, &possible_moves_knight};
+    white[2] = (piece_t) {'b', BISHOP, WHITE, (pnt_t) {0, 2}, &possible_moves_bishop};
+    white[3] = (piece_t) {'K', KING,   WHITE, (pnt_t) {0, 3}, &possible_moves_king};
+    white[4] = (piece_t) {'Q', QUEEN,  WHITE, (pnt_t) {0, 4}, &possible_moves_queen};
+    white[5] = (piece_t) {'b', BISHOP, WHITE, (pnt_t) {0, 5}, &possible_moves_bishop};
+    white[6] = (piece_t) {'k', KNIGHT, WHITE, (pnt_t) {0, 6}, &possible_moves_knight};
+    white[7] = (piece_t) {'r', ROOK,   WHITE, (pnt_t) {0, 7}, &possible_moves_rook};
+
+    for (int i = 8; i < 16; i++)
+        white[i] = (piece_t) {'p', PAWN,   WHITE, (pnt_t) {1, i % 8}, &possible_moves_pawn};
+
+    black[0] = (piece_t) {'r', ROOK,   BLACK, (pnt_t) {7, 0}, &possible_moves_rook};
+    black[1] = (piece_t) {'k', KNIGHT, BLACK, (pnt_t) {7, 1}, &possible_moves_knight};
+    black[2] = (piece_t) {'b', BISHOP, BLACK, (pnt_t) {7, 2}, &possible_moves_bishop};
+    black[3] = (piece_t) {'Q', QUEEN,  BLACK, (pnt_t) {7, 3}, &possible_moves_queen};
+    black[4] = (piece_t) {'K', KING,   BLACK, (pnt_t) {7, 4}, &possible_moves_king};
+    black[5] = (piece_t) {'b', BISHOP, BLACK, (pnt_t) {7, 5}, &possible_moves_bishop};
+    black[6] = (piece_t) {'k', KNIGHT, BLACK, (pnt_t) {7, 6}, &possible_moves_knight};
+    black[7] = (piece_t) {'r', ROOK,   BLACK, (pnt_t) {7, 7}, &possible_moves_rook};
+
+    for (int i = 8; i < 16; i++)
+        black[i] = (piece_t) {'p', PAWN,   BLACK, (pnt_t) {6, i % 8}, &possible_moves_pawn};
+
+    for (int i = 0; i < 16; i++)
+        place_piece(&white[i]);
+
+    for (int i = 0; i < 16; i++)
+        place_piece(&black[i]);
+}
+
+void init_disp() {
+    initscr(); raw(); noecho(); start_color();
+    init_pair(WHITE, COLOR_BLACK, COLOR_WHITE);
+    init_pair(BLACK, COLOR_WHITE, COLOR_BLACK);
+    init_pair(EMPTY, COLOR_BLUE, COLOR_GREEN);
+    init_pair(TMP, COLOR_BLACK, COLOR_BLUE);
+}
+
+int kill(WINDOW *chess) {
+    delwin(chess);
+    endwin();
+    return 1;
+}
+
+void render_board(WINDOW *chess) {
+    for (int i = 0; i < BRD_H ; i++) {
+        for (int j = 0; j < BRD_W; j++) {
+            pnt_t p = (pnt_t) {j, i};
+            if (board[MAP(p)] == NULL) continue;
+
+            wattron(chess, COLOR_PAIR(board[MAP(p)]->team));
+            mvwprintw(chess, i + 1, j + 1, "%c", board[MAP(p)]->sym);
+            wattroff(chess, COLOR_PAIR(board[MAP(p)]->team));
+
+        }
+    }
+}
+
+void render_taken(WINDOW *stdscr) {
+    int x, y;
+    getyx(stdscr, y, x);
+
+    for (int i = 0; i < num_taken_white; i++) {
+        mvwprintw(stdscr, y/4, x/8 + 1 + i, "%c", taken_white[i]);
+    }
+
+    for (int i = 0; i < num_taken_black; i++) {
+        mvwprintw(stdscr, 3 * y/4, 7 * x/8 - 1 - i, "%c", taken_black[i]);
+    }
+
+    return;
+}
+
+void clear_tmp() {
+    for (int i = 0; i < BRD_H * BRD_W; i++) {
+        if (board[i] == NULL) continue;
+        if (board[i]->name == TMP) board[i] = NULL;
+    }
+
+    for (int i = 0; i < 16; i++)
+        place_piece(&white[i]);
+
+    for (int i = 0; i < 16; i++)
+        place_piece(&black[i]);
+}
+
+int main(void) {
+    init_game();
+    init_disp();
+
+    int yMax, xMax;
+    getmaxyx(stdscr, yMax, xMax);
+
+    int top_h = (yMax - BRD_H)/2 - 1;
+    int top_w = (xMax - BRD_W)/2 - 1;
+
+    WINDOW *chess = newwin(BRD_H + 2, BRD_W + 2, top_h, top_w);
+
+    refresh();
+    wrefresh(chess);
+
+    int forfiet = 0;
+    int turn = WHITE;
+
+    while (forfiet == 0) {
+        // print game board
+        box(chess, 0, 0);
+        render_board(chess);
+        render_taken(stdscr);
+
+        wrefresh(chess);
+
+        pnt_t cur;
+        char c;
+        do {
+            getyx(chess, cur.y, cur.x);
+            // move the cursor until ' ' is returned
+            c = ':';
+            while ((c = getch()) != ' ') {
+                switch(c) {
+                    case 'q': return kill(chess); break;
+                    case 'a': getyx(chess, cur.y, cur.x); wmove(chess, cur.y, cur.x - 1); break;
+                    case 'w': getyx(chess, cur.y, cur.x); wmove(chess, cur.y - 1, cur.x); break;
+                    case 's': getyx(chess, cur.y, cur.x); wmove(chess, cur.y + 1, cur.x); break;
+                    case 'd': getyx(chess, cur.y, cur.x); wmove(chess, cur.y, cur.x +1); break;
+                }
+
+                wrefresh(chess);
+            }
+
+            // get pos of piece
+            getyx(chess, cur.y, cur.x);
+            cur.x--; cur.y--;
+        } while (board[MAP(cur)] == NULL);
+
+        piece_t *sel = board[MAP(cur)];
+
+        sel->possible(sel);
+        render_board(chess);
+        wrefresh(chess);
+
+        wmove(chess, cur.y + 1, cur.x + 1);
+        wrefresh(chess);
+        do {
+            c = ':';
+            while ((c = getch()) != ' ') {
+                switch(c) {
+                    case 'q': return kill(chess); break;
+                    case 'a': getyx(chess, cur.y, cur.x); wmove(chess, cur.y, cur.x - 1); break;
+                    case 'w': getyx(chess, cur.y, cur.x); wmove(chess, cur.y - 1, cur.x); break;
+                    case 's': getyx(chess, cur.y, cur.x); wmove(chess, cur.y + 1, cur.x); break;
+                    case 'd': getyx(chess, cur.y, cur.x); wmove(chess, cur.y, cur.x +1); break;
+                }
+
+                wrefresh(chess);
+            }
+
+            getyx(chess, cur.y, cur.x);
+            cur.x--; cur.y--;
+        } while (board[MAP(cur)] == NULL);
+
+        move_piece(sel, cur);
+        place_piece(sel);
+
+        clear_tmp();
+        wclear(chess);
+    }
+
+    delwin(chess);
+    endwin();
+    return 0;
+}

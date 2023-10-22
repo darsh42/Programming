@@ -1,11 +1,15 @@
 #ifndef RAYCASTER_H_INCLUDED
 #define RAYCASTER_H_INCLUDED
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
 #include <stdbool.h>
-#include <math.h>
+
 #include <SDL2/SDL.h>
+
+#include <math.h>
+#include <time.h>
 
 #define WIDTH  1280
 #define HEIGHT 480
@@ -27,5 +31,8 @@ bool kill();
 
 void render(bool clear);
 void draw_vertical_line(double distance, int ray_num, int R, int G, int B);
+void draw_crosshair();
+void draw_debug(double posX, double posY, double dirX, double dirY);
+void update_screen();
 
 #endif

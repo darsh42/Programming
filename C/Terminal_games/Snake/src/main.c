@@ -1,9 +1,8 @@
 #include "main.h"
-#include <stdlib.h>
 
 int map[MAP_H * MAP_W];
 
-int make_segment(seg_t *head) {
+int make_segment(seg_t *head, int *total_segments) {
     seg_t *cur;
     for (cur = head; cur->next != NULL; cur = cur->next)
         ;
@@ -15,6 +14,7 @@ int make_segment(seg_t *head) {
 
     cur->next->next = NULL;
 
+    (*total_segments)++;
     return 0;
 }
 
@@ -34,8 +34,8 @@ int draw_segment(seg_t *head) {
 int move_segment(seg_t *head, pnt_t move) {
     head->prev = head->pos;
     pnt_t tmp = ADD_PNT(head->pos, move);
-    head->pos.x = (tmp.x < 0) ? MAP_W + 1 + tmp.x: tmp.x % MAP_W;
-    head->pos.y = (tmp.y < 0) ? MAP_H + 1 + tmp.y: tmp.y % MAP_H;
+    head->pos.x = (tmp.x < 0) ? MAP_W + tmp.x: tmp.x % MAP_W;
+    head->pos.y = (tmp.y < 0) ? MAP_H + tmp.y: tmp.y % MAP_H;
 
     for (seg_t *s = head, *n = s->next; n != NULL; s = s->next, n = n->next) {
         n->prev = n->pos;
@@ -53,12 +53,13 @@ int move_segment(seg_t *head, pnt_t move) {
 */
 int hits_segment(seg_t *head, pnt_t move) {
     pnt_t p = ADD_PNT(head->pos, move);
+    p.x = (p.x < 0) ? MAP_W + p.x: p.x % MAP_W;
+    p.y = (p.y < 0) ? MAP_H + p.y: p.y % MAP_H;
 
-    if (map[MAP_COORDS(p)] == SEG_SYM)
-        return 1;
-
-    if (map[MAP_COORDS(p)] == APP_SYM)
-        return 2;
+    switch (map[MAP_COORDS(p)]) {
+        case(SEG_SYM): return 1;
+        case(APP_SYM): return 2;
+    }
 
     return 0;
 }
@@ -91,6 +92,8 @@ int main(void) {
     int points;
 
     seg_t head;
+    int segments = 0;
+
     pnt_t move;
     pnt_t apple;
     bool taken = false;
@@ -98,11 +101,13 @@ int main(void) {
     quit = false;
     points = 0;
 
+    srand(time(NULL));
     apple = (pnt_t) {rand() % MAP_W, rand() % MAP_H};
     head = (seg_t) {NULL, (pnt_t) {0, 0}, (pnt_t) {0, 0}};
     while (!quit) {
         if (taken) {
             taken = false;
+            srand(time(NULL));
             apple = (pnt_t) {rand() % MAP_W, rand() % MAP_H};
         }
 
@@ -123,7 +128,7 @@ int main(void) {
             case 2:
                 taken = true;
                 points++;
-                make_segment(&head);
+                make_segment(&head, &segments);
             default:
                 move_segment(&head, move);
         }
@@ -148,6 +153,15 @@ int main(void) {
 
         wrefresh(snake);
         refresh();
+    }
+
+    if (segments != 0) {
+        seg_t *c = head.next, *n = c->next;
+        for (int i = 0; i < segments - 1; i++, c = n, n = n->next)
+            free(c);
+
+        free(c);
+        free(n);
     }
 
     delwin(snake);

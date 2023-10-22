@@ -13,6 +13,7 @@
  * return string[-1]                                            */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #define ITERNUM 22
 
@@ -58,7 +59,7 @@ double timer(int (*func)(char *, int, int)) {
   int i;
   long long stringMaxLen;
   int stringCurrentLen;
-  char str[(stringMaxLen = power(2, ITERNUM - 1) + 1)];
+  char *str = malloc(sizeof(char) * (stringMaxLen = power(2, ITERNUM - 1) + 10));
   
   str[0] = '0';
   str[1] = '\0';
@@ -70,6 +71,7 @@ double timer(int (*func)(char *, int, int)) {
     stringCurrentLen = func(str, stringCurrentLen, stringMaxLen);
 
   printf("%c\n", str[stringMaxLen - 2]);
+  free(str);
 
   end = clock();
   return ((double) (end - start))/CLOCKS_PER_SEC;

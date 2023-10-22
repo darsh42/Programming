@@ -5,7 +5,7 @@
 # @version 0.1
 
 CC = gcc
-CFLAGS = -g -lSDL2 -lm -Wall -Wextra
+CFLAGS = -O3 -lSDL2 -lm -Wall -Wextra
 DEPS = raycaster.h
 OBJS = raycaster.o
 

@@ -1,0 +1,13 @@
+SNAKE: COMPLETED
+	debugged and tested, no memory leaks
+
+TETRIS: DEBUGGING
+	main loop done
+
+CHESS: BUILDING
+	add win condition
+	player turns
+	taken pieces
+
+MINESWEEPER: IDEA
+	implement

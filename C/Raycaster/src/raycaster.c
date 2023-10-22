@@ -100,12 +100,13 @@ int main(void) {
             vec_t ray = add_vec('+', 3, pos, dir, mul_const(plane, (2.0*i)/RAYCOUNT));
 
             // sector_edge is the distance from pos to the next immediate sector
-            // in-terms of pixels rather than sectors
+            // in-terms of pixels rather than sectors from the current player pos
             vec_t sector_edge, step; 
             // sector_map is the current map sector of the player, in terms of sectors
             vec_t sector_map = (vec_t) {(int)(pos.x / MAP_WIDTH), (int)(pos.y / MAP_HEIGHT)};
             vec_t delta_dist = (vec_t) {fabs(1/ray.x), fabs(1/ray.y)};
 
+            // finding the nearest sector from the current player position
             if (dir.x < 0) {
                 step.x = -1;
                 sector_edge.x = pos.x - sector_map.x * WIDTH;
@@ -125,6 +126,7 @@ int main(void) {
             bool hit = false;
             int side; // NS or EW hit
 
+            // increment sector_edge by delta_dist until sector is hit
             while (!hit) {
                 if (delta_dist.x < delta_dist.y) {
                     sector_edge.x += delta_dist.x;
@@ -140,16 +142,16 @@ int main(void) {
                 
                 if (map[(int) sector_map.y][(int) sector_map.x] != 0) hit = true;
             }
-            printf("MAP SECTOR: {%f, %f}\n", sector_map.x, sector_map.y);
 
-            int perp_wall_distance;
+            // find how far the wall hit is by the magnitude of x or y in sector_edge
+            double perp_wall_distance;
             if (side == 0) perp_wall_distance = sector_edge.x - delta_dist.x;
-            if (side == 1) perp_wall_distance = sector_edge.y - delta_dist.y;
+            else           perp_wall_distance = sector_edge.y - delta_dist.y;
 
             if (side == 0)
-                draw_vertical_line(perp_wall_distance, i + RAYCOUNT/2, 255, 0, 0);
+                draw_vertical_line(WIDTH/perp_wall_distance, i + RAYCOUNT/2, 255, 0, 0);
             else
-                draw_vertical_line(perp_wall_distance, i + RAYCOUNT/2, 0, 0, 255);
+                draw_vertical_line(WIDTH/perp_wall_distance, i + RAYCOUNT/2, 0, 0, 255);
         }
 
         draw_debug(pos, dir);
@@ -185,7 +187,6 @@ int main(void) {
     kill();
     return 0;
 }
-
 
 SDL_Window *win;
 SDL_Renderer *rend;
@@ -237,7 +238,7 @@ void draw_vertical_line(double distance, int ray_num, int R, int G, int B) {
     /*
      * "30/distance" --> smaller distance == bigger line, larger distance == smaller line
      */
-    // printf("Line distance: {RAYNUM: %d, PERPDISTANCE: %f}\n", ray_num, fabs(distance));
+    printf("Line distance: {RAYNUM: %d, PERPDISTANCE: %f}\n", ray_num, fabs(distance));
     vec_t line[2] = {{ray_num + GAME_WIDTH, center_point.y + 30/fabs(distance)},
                      {ray_num + GAME_WIDTH, center_point.y - 30/fabs(distance)}};
     SDL_SetRenderDrawColor(rend, R, G, B, SDL_ALPHA_OPAQUE);

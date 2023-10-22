@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <ncurses.h>
+#include <time.h>
 
 #define MAP_H 25
 #define MAP_W 50
