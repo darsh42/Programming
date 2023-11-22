@@ -5,9 +5,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <ncurses.h>
+#include <time.h>
 
 #define BLK_HGHT 30
-#define BLK_WDTH 12
+#define BLK_WDTH 19
 #define ADD_PNT(a, b)                                                          \
   { a.x + b.x, a.y + b.y }
 #define MAP_PNT(a, b)                                                          \
@@ -25,7 +26,7 @@
 ** - 4 block line
 ** - 4 block S/Z
 */
-#define SHAPE_VARIANTS 4
+#define SHAPE_VARIANTS 7
 #define SHAPE_FILE "shapes.txt"
 
 typedef struct point { int x; int y; } pnt_t;

@@ -12,32 +12,32 @@ piece_t *board[BRD_H * BRD_W];
 
 void init_game() {
     //dummy piece
-    tmp = (piece_t) {'T', TMP, TMP, (pnt_t) {-1, -1}, NULL};
+    tmp   = (piece_t) {'T', TMP, TMP, (pnt_t) {-1, -1}, NULL};
     empty = (piece_t) {'E', EMPTY, EMPTY, (pnt_t) {-1, -1}, NULL};
 
     for (int i = 0; i < BRD_H * BRD_W; i++)
         board[i] = NULL;
 
-    white[0] = (piece_t) {'r', ROOK,   WHITE, (pnt_t) {0, 0}, &possible_moves_rook};
+    white[0] = (piece_t) {'r', ROOK,   WHITE, (pnt_t) {0, 0}, &possible_moves_rook  };
     white[1] = (piece_t) {'k', KNIGHT, WHITE, (pnt_t) {0, 1}, &possible_moves_knight};
     white[2] = (piece_t) {'b', BISHOP, WHITE, (pnt_t) {0, 2}, &possible_moves_bishop};
-    white[3] = (piece_t) {'K', KING,   WHITE, (pnt_t) {0, 3}, &possible_moves_king};
-    white[4] = (piece_t) {'Q', QUEEN,  WHITE, (pnt_t) {0, 4}, &possible_moves_queen};
+    white[3] = (piece_t) {'K', KING,   WHITE, (pnt_t) {0, 3}, &possible_moves_king  };
+    white[4] = (piece_t) {'Q', QUEEN,  WHITE, (pnt_t) {0, 4}, &possible_moves_queen };
     white[5] = (piece_t) {'b', BISHOP, WHITE, (pnt_t) {0, 5}, &possible_moves_bishop};
     white[6] = (piece_t) {'k', KNIGHT, WHITE, (pnt_t) {0, 6}, &possible_moves_knight};
-    white[7] = (piece_t) {'r', ROOK,   WHITE, (pnt_t) {0, 7}, &possible_moves_rook};
+    white[7] = (piece_t) {'r', ROOK,   WHITE, (pnt_t) {0, 7}, &possible_moves_rook  };
 
     for (int i = 8; i < 16; i++)
         white[i] = (piece_t) {'p', PAWN,   WHITE, (pnt_t) {1, i % 8}, &possible_moves_pawn};
 
-    black[0] = (piece_t) {'r', ROOK,   BLACK, (pnt_t) {7, 0}, &possible_moves_rook};
+    black[0] = (piece_t) {'r', ROOK,   BLACK, (pnt_t) {7, 0}, &possible_moves_rook  };
     black[1] = (piece_t) {'k', KNIGHT, BLACK, (pnt_t) {7, 1}, &possible_moves_knight};
     black[2] = (piece_t) {'b', BISHOP, BLACK, (pnt_t) {7, 2}, &possible_moves_bishop};
-    black[3] = (piece_t) {'Q', QUEEN,  BLACK, (pnt_t) {7, 3}, &possible_moves_queen};
-    black[4] = (piece_t) {'K', KING,   BLACK, (pnt_t) {7, 4}, &possible_moves_king};
+    black[3] = (piece_t) {'Q', QUEEN,  BLACK, (pnt_t) {7, 3}, &possible_moves_queen };
+    black[4] = (piece_t) {'K', KING,   BLACK, (pnt_t) {7, 4}, &possible_moves_king  };
     black[5] = (piece_t) {'b', BISHOP, BLACK, (pnt_t) {7, 5}, &possible_moves_bishop};
     black[6] = (piece_t) {'k', KNIGHT, BLACK, (pnt_t) {7, 6}, &possible_moves_knight};
-    black[7] = (piece_t) {'r', ROOK,   BLACK, (pnt_t) {7, 7}, &possible_moves_rook};
+    black[7] = (piece_t) {'r', ROOK,   BLACK, (pnt_t) {7, 7}, &possible_moves_rook  };
 
     for (int i = 8; i < 16; i++)
         black[i] = (piece_t) {'p', PAWN,   BLACK, (pnt_t) {6, i % 8}, &possible_moves_pawn};
@@ -86,7 +86,7 @@ void render_taken(WINDOW *stdscr) {
     }
 
     for (int i = 0; i < num_taken_black; i++) {
-        mvwprintw(stdscr, 3 * y/4, 7 * x/8 - 1 - i, "%c", taken_black[i]);
+        mvwprintw(stdscr, y/4, 7 * (x/8) - 1 - i, "%c", taken_black[i]);
     }
 
     return;
@@ -115,12 +115,14 @@ int main(void) {
     int top_h = (yMax - BRD_H)/2 - 1;
     int top_w = (xMax - BRD_W)/2 - 1;
 
+    // determines team turn
+    bool white_turn = true;
+    int forfiet = 0;
+
     WINDOW *chess = newwin(BRD_H + 2, BRD_W + 2, top_h, top_w);
 
     refresh();
     wrefresh(chess);
-
-    int forfiet = 0;
 
     while (forfiet == 0) {
         // print game board
@@ -130,6 +132,7 @@ int main(void) {
 
         wrefresh(chess);
 
+        // select piece to move
         pnt_t cur;
         char c;
         do {
@@ -151,7 +154,7 @@ int main(void) {
             // get pos of piece
             getyx(chess, cur.y, cur.x);
             cur.x--; cur.y--;
-        } while (board[MAP(cur)] == NULL);
+        } while (board[MAP(cur)] == NULL || board[MAP(cur)]->team != white_turn);
 
         piece_t *sel = board[MAP(cur)];
 
@@ -161,6 +164,10 @@ int main(void) {
 
         wmove(chess, cur.y + 1, cur.x + 1);
         wrefresh(chess);
+
+        /* select where to move piece
+           - loop is non-marked position is selected
+        */
         do {
             c = ':';
             while ((c = getch()) != ' ') {
@@ -170,6 +177,7 @@ int main(void) {
                     case 'w': getyx(chess, cur.y, cur.x); wmove(chess, cur.y - 1, cur.x); break;
                     case 's': getyx(chess, cur.y, cur.x); wmove(chess, cur.y + 1, cur.x); break;
                     case 'd': getyx(chess, cur.y, cur.x); wmove(chess, cur.y, cur.x +1); break;
+                    case 'r': clear_tmp(); continue; break;
                 }
 
                 wrefresh(chess);
@@ -177,16 +185,19 @@ int main(void) {
 
             getyx(chess, cur.y, cur.x);
             cur.x--; cur.y--;
-        } while (board[MAP(cur)] == NULL);
+        } while (board[MAP(cur)] == NULL || board[MAP(cur)]->team != TMP);
 
         move_piece(sel, cur);
         place_piece(sel);
 
         clear_tmp();
         wclear(chess);
+
+        white_turn = !white_turn;
     }
 
     delwin(chess);
     endwin();
+
     return 0;
 }

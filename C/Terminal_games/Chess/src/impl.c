@@ -254,3 +254,9 @@ int possible_moves_pawn(piece_t *piece) {
     }
     return moves;
 }
+
+int is_check() {
+
+
+    return 0;
+}

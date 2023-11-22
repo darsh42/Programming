@@ -26,8 +26,12 @@
 #define PAWN    1
 #define EMPTY   0
 
+// team
 #define WHITE   1
-#define BLACK   2
+#define BLACK   0
+
+// keys
+#define ESC 27
 
 typedef struct point {
     int x, y;

@@ -1,0 +1,4 @@
+- $('NAME') - Variable with alias NAME
+- $@        - Reference to left-side of label
+- $^        - Reference to right-side of lable
+- %         - Wildcard, refering to all ending/containing

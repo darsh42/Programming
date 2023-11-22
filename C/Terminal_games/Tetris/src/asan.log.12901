@@ -1,0 +1,44 @@
+=================================================================
+==12901==ERROR: AddressSanitizer: global-buffer-overflow on address 0x564681fc837c at pc 0x564681fc2bf8 bp 0x7ffd183e6dd0 sp 0x7ffd183e6dc8
+WRITE of size 4 at 0x564681fc837c thread T0
+    #0 0x564681fc2bf7 in map_shape /home/darsh/Programming/C/Terminal_games/Tetris/src/main.c:55
+    #1 0x564681fc39b8 in move_shape /home/darsh/Programming/C/Terminal_games/Tetris/src/main.c:115
+    #2 0x564681fc4903 in main /home/darsh/Programming/C/Terminal_games/Tetris/src/main.c:203
+    #3 0x7fd8414461c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #4 0x7fd841446284 in __libc_start_main_impl ../csu/libc-start.c:360
+    #5 0x564681fc22a0 in _start (/home/darsh/Programming/C/Terminal_games/Tetris/src/main+0x22a0)
+
+Address 0x564681fc837c is a wild pointer inside of access range of size 0x000000000004.
+SUMMARY: AddressSanitizer: global-buffer-overflow /home/darsh/Programming/C/Terminal_games/Tetris/src/main.c:55 in map_shape
+Shadow bytes around the buggy address:
+  0x0ac9503f1010: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ac9503f1020: 00 00 00 00 00 00 00 00 00 f9 f9 f9 f9 f9 f9 f9
+  0x0ac9503f1030: 00 00 00 00 00 00 00 00 f9 f9 f9 f9 f9 f9 f9 f9
+  0x0ac9503f1040: f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9
+  0x0ac9503f1050: f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9
+=>0x0ac9503f1060: f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9[f9]
+  0x0ac9503f1070: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ac9503f1080: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ac9503f1090: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ac9503f10a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ac9503f10b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==12901==ABORTING

@@ -7,3 +7,5 @@ Rust/
 venv/
 Python/Raycaster/
 C/Raycaster/src/core
+C/WindowManager/src/tinywm
+GLSL/

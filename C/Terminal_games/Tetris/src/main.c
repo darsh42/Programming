@@ -20,6 +20,9 @@ int init() {
     init_pair(2, COLOR_BLUE, COLOR_BLUE);
     init_pair(3, COLOR_RED, COLOR_RED);
     init_pair(4, COLOR_MAGENTA, COLOR_MAGENTA);
+    init_pair(5, COLOR_YELLOW, COLOR_YELLOW);
+    init_pair(6, COLOR_CYAN, COLOR_CYAN);
+    init_pair(7, COLOR_WHITE, COLOR_WHITE);
     init_pair(10, COLOR_WHITE, COLOR_WHITE);
 
 
@@ -30,10 +33,13 @@ int init() {
         }
     }
 
-    shape_varients[0] = (shape_t) {1, (pnt_t) {2, 1}, {0, 0}, 4, {{0, 0}, {0, 1}, {1, 0}, {1, 1}}};
-    shape_varients[1] = (shape_t) {2, (pnt_t) {2, 1}, {0, 0}, 4, {{0, 0}, {0, 1}, {1, 0}, {2, 0}}};
-    shape_varients[2] = (shape_t) {3, (pnt_t) {2, 1}, {0, 0}, 4, {{0, 0}, {1, 0}, {2, 0}, {3, 0}}};
-    shape_varients[3] = (shape_t) {4, (pnt_t) {2, 1}, {0, 0}, 4, {{0, 0}, {0, 1}, {1, 1}, {1, 2}}};
+    shape_varients[0] = (shape_t) {1, (pnt_t) {2, 1}, {0, 0}, 4, {{0, 0}, {0, 1}, {1, 0}, {1, 1}}}; // square
+    shape_varients[1] = (shape_t) {2, (pnt_t) {2, 1}, {0, 0}, 4, {{0, 0}, {0, 1}, {1, 0}, {2, 0}}}; // L
+    shape_varients[2] = (shape_t) {3, (pnt_t) {2, 1}, {0, 0}, 4, {{0, 0}, {1, 0}, {2, 0}, {3, 0}}}; // line
+    shape_varients[3] = (shape_t) {4, (pnt_t) {2, 1}, {0, 0}, 4, {{0, 0}, {0, 1}, {1, 1}, {1, 2}}}; // S
+    shape_varients[4] = (shape_t) {5, (pnt_t) {2, 1}, {0, 0}, 4, {{0, 0}, {0, 1}, {0, 2}, {1, 1}}}; // T
+    shape_varients[5] = (shape_t) {2, (pnt_t) {2, 1}, {0, 0}, 4, {{0, 0}, {0, 1}, {1, 1}, {1, 2}}}; // J
+    shape_varients[6] = (shape_t) {7, (pnt_t) {2, 1}, {0, 0}, 4, {{0, 1}, {1, 1}, {1, 0}, {2, 0}}}; // Z
 
     return  0;
 }
@@ -179,10 +185,10 @@ int main(int argc, char *argv[]) {
     // set start conditions
     quit = false;
     points = 0;
-    shape = shape_varients[shp_var++];
-    shp_var %= 4;
+    shape = shape_varients[rand() % SHAPE_VARIANTS];
 
     while (!quit) {
+        srand(time(NULL));
         pnt_t move;
         switch(getch()) {
             case 'q': quit = true; break;
@@ -200,8 +206,7 @@ int main(int argc, char *argv[]) {
                 // set shape to finished colour
                 set_shape(shape);
 
-                shape = shape_varients[shp_var++];
-                shp_var %= 4;
+                shape = shape_varients[rand() % SHAPE_VARIANTS];
                 // checks if a line needs to be cleared
                 bool clear;
                 for (int mapY = BLK_HGHT - 1; mapY >= 0; mapY--) {
