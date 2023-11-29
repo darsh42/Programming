@@ -35,4 +35,11 @@ uint8_t fonts[] = {
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
+// SDL functions
+int render_display();
+int init_display();
+void getkey();
+int kill();
+
+
 #endif // CHIP_8_H_INCLUDED
