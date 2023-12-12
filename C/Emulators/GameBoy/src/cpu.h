@@ -4,10 +4,10 @@
 #include "common.h"
 
 // Get each flag
-#define FZ ((cpu->AF.lower & 0X80) == 0X80)
-#define FN ((cpu->AF.lower & 0X40) == 0X40)
-#define FH ((cpu->AF.lower & 0X20) == 0X20)
-#define FC ((cpu->AF.lower & 0X10) == 0X10)
+#define FZ ((cpu.AF.lower & 0X80) == 0X80)
+#define FN ((cpu.AF.lower & 0X40) == 0X40)
+#define FH ((cpu.AF.lower & 0X20) == 0X20)
+#define FC ((cpu.AF.lower & 0X10) == 0X10)
 
 // Calculate Half or Full Carry
 #define     HALF_CARRY(a, b, sign) (((a & 0X0f) sign (b & 0X0f)) & 0X010) == 0X010

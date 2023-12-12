@@ -2,41 +2,32 @@
 #define GBC_H_INCLUDED
 
 #include "common.h"
-#include "cpu.h"
-#include "ppu.h"
-#include "apu.h"
-#include "mem.h"
 
-struct GameBoy {
-    struct cpu cpu;
-    struct ppu ppu;
-    struct apu apu;
-    struct mem mem;
+// Load ROM
+extern int load_rom(char **filename);
 
-    /*
-    ** Display
-    */
-
-};
+// cpu clock handles
+int cpu_clocks();
+void cpu_clock_reset();
 
 // Device initization functions
 extern int sdl_init();
 extern void mem_init();
-extern void cpu_init(struct cpu *cpu);
-extern void ppu_init(struct ppu *ppu);
+extern void cpu_init();
+extern void ppu_init();
 
 // Device Execution functions
-extern void cpu_exec(struct cpu *cpu);
-extern void ppu_exec(struct ppu *cpu);
-extern void apu_exec(struct apu *cpu);
+extern void cpu_exec();
+extern void ppu_exec();
+extern void apu_exec();
 
 // Rendering Functions
 extern int sdl_kill();
-extern void RenderScreen(struct GameBoy *GameBoy);
+extern void RenderScreen();
 
 // Debugger
-extern void debugger_init(struct cpu *cpu, struct mem *mem, struct ppu *ppu, struct apu *apu);
+extern void debugger_init();
 extern void debugger_kill();
-extern void debugger_update();
+extern int debugger_update();
 
 #endif // GBC_H_INCLUDED

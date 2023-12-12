@@ -1,14 +1,13 @@
 #include "GBC.h"
 
-struct GameBoy GameBoy;
 void gameboy_init() {
     sdl_init();
-    mem_init(&GameBoy.mem);
-    cpu_init(&GameBoy.cpu);
-    ppu_init(&GameBoy.ppu);
-    // apu_init(&Gameboy.apu);
+    mem_init();
+    cpu_init();
+    ppu_init();
+    // apu_init();
 
-    debugger_init(&GameBoy.cpu, &GameBoy.mem, &GameBoy.ppu, &GameBoy.apu);
+    debugger_init();
 }
 
 int main(int argc, char **argv) {
@@ -17,35 +16,27 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    FILE *rom;
-    if ( (rom = fopen(*(argv+=1), "rb")) == NULL) {
-        fprintf(stderr, "[Error] GBC.c: Cannot read rom <%s>\n", *argv);
-        return 1;
-    }
-    int read_status = 0;
-    if ((read_status = fread(GameBoy.mem.main, 1, 0X8000, rom)) == 0) {
-        fprintf(stderr, "[Error] GBC.c: Could not read <%s>, bytes read: %d\n", *argv, read_status);
-        return 1;
-    }
-    fclose(rom);
+    if (load_rom(argv+=1) != 0) return 1;
 
     gameboy_init();
 
     bool emulate = true;
     int MAXCYCLES = 69905;
 
-
-
     while (emulate) {
-        while (GameBoy.cpu.clock < MAXCYCLES) {
-            cpu_exec(&GameBoy.cpu);
-            ppu_exec(&GameBoy.ppu);
-            debugger_update();
+        while (cpu_clocks() < MAXCYCLES) {
+            cpu_exec();
+            ppu_exec();
+            if (debugger_update() != 0) {
+                emulate = false;
+                break;
+            }
         }
-        GameBoy.cpu.clock = 0;
-        RenderScreen(&GameBoy);
+        cpu_clock_reset();
     }
 
+
     debugger_kill();
+    sdl_kill();
     return 0;
 }

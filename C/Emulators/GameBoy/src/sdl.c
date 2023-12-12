@@ -42,13 +42,16 @@ int sdl_kill() {
     return 0;
 }
 
-void update_texture(struct GameBoy *GameBoy) {
+/*
+void update_texture() {
+    uint8_t display[160][144][3] = ppu_get_display();
+
     if (SDL_LockTexture(screen, NULL, (void *) pixels, &pitch) != 0) {
         fprintf(stderr, "[Error] sdl.c: Unable to lock screen texture, %s\n", SDL_GetError());
         return;
     }
 
-    memcpy(pixels, GameBoy->ppu.display, sizeof(pixels));
+    memcpy(pixels, display, sizeof(pixels));
 
     SDL_UnlockTexture(screen);
 
@@ -62,7 +65,10 @@ void Render(struct GameBoy *GameBoy) {
     update_texture(GameBoy);
     SDL_RenderPresent(rend);
 }
-void RenderScreen(struct GameBoy *GameBoy) {
+*/
+
+void RenderScreen() {
+    uint8_t ***display = ppu_get_display();
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 
     // clear the current rendering target with the drawing color
@@ -75,9 +81,9 @@ void RenderScreen(struct GameBoy *GameBoy) {
         for (int x = 0; x < 160; x++) {
 
                 SDL_SetRenderDrawColor(rend,
-                                       GameBoy->ppu.display[x][y][0],
-                                       GameBoy->ppu.display[x][y][1],
-                                       GameBoy->ppu.display[x][y][2],
+                                       display[x][y][0],
+                                       display[x][y][1],
+                                       display[x][y][2],
                                        255);
 
                 SDL_RenderDrawPoint(rend, x, y);
