@@ -1,0 +1,70 @@
+#ifndef PPU_H_INCLUDED
+#define PPU_H_INCLUDED
+
+#include "common.h"
+
+#define   SIGNED_ADDR(tile_num)  ((int8_t) tile_num * 16 + 0X8800)
+#define UNSIGNED_ADDR(tile_num) ((uint8_t) tile_num * 16 + 0X8000)
+#define ADDR(tile_num, mode) (mode) ? SIGNED_ADDR(tile_num): UNSIGNED_ADDR(tile_num)
+#define TEST_BIT(a, b) ((a & (1 << b)) == (1 << b))
+#define GET_BIT(a, b) ((a & (1 << b)) == (1 << b))
+#define TILEMAP(a) (a) ? 0X9C00: 0X9800
+
+struct ppu {
+    /*
+    ** Display
+    */
+    uint8_t display[160][144][3];
+
+    /*
+    ** Registers
+    ** - Determine Viewport
+    ** - Window overlay
+    */
+    uint8_t SCX, SCY;
+    uint8_t WX, WY;
+
+    // LY - Scanline
+    uint8_t LY;
+    uint8_t LYC;
+
+    /*
+    ** LCD Control register:
+    **   7 - LCD & PPU enable, 0 = off, 1 = on
+    **   6 - Window tile map area, 0 = 0X9800 - 0X9BFF, 1 = 0X8000 - 0X8FFF
+    **   5 - Window Enable - 0 = off, 1 = on
+    **   4 - BG & Window tiles - 0 = 0X8800 - 0X97FF, 1 = 0X8000 - 0X8FFF
+    **   3 - BG Tile map - 0 = 0X9800 - 0X9BFF, 1 = 0X9C00 - 0X9FFF
+    **   2 - OBJ size - 0 = 8x8, 1 = 8x16
+    **   1 - OBJ enable - 0 = off, 1 = on
+    **   0 - BG & Window enable/priority - 0 = off, 1 = on
+    */
+    uint8_t LCDC;
+
+    /*
+    ** LCD Status register:
+    **   Defines conditions for STAT interrupts
+    **   7 -
+    **   6 - LYC int select
+    **   5 - Mode 2 int select
+    **   4 - Mode 1 int select
+    **   3 - Mode 0 int select
+    **   2 - LYC == LY
+    **   1 - ppu mode
+    **   0 - ppu mode
+    */
+    uint8_t LCDS;
+
+    // Window
+    bool usingWin;
+
+    // misc
+    uint16_t background_mem;
+    bool status_read;
+};
+
+/* Memory functions */
+extern uint16_t mem_read(uint16_t addr, int size, bool *status);
+extern void mem_write(uint16_t val, uint16_t addr, int size, bool *status);
+
+#endif // PPU_H_INCLUDED

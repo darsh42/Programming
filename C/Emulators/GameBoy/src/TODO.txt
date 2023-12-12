@@ -1,0 +1,2 @@
+Create proper start up sequence, set all correct register values and memory locations
+	-> Info on Pandocs and Codeslinger pdf
