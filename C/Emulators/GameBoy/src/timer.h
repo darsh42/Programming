@@ -53,7 +53,7 @@ struct timers {
 };
 
 /* Timer Interrupts */
-extern void timer_interrupt();
+extern void interrupt_request(uint8_t request);
 
 /* Memory functions */
 extern uint8_t *mem_pointer(uint16_t addr);

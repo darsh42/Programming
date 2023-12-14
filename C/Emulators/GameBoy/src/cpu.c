@@ -1,15 +1,42 @@
 #include "cpu.h"
 
 struct cpu cpu;
+bool status_read = false;
+bool status_write = false;
 
-/* writes to flag reg, mask specifies unchanged flags */
-void flag_write(bool Z, bool N, bool H, bool C, uint8_t mask) {
-    cpu.AF.lower = (cpu.AF.lower & (mask << 4)) | ((Z << 7) & (N << 6) & (H << 5) & (C << 4));
+int cpu_clocks() {
+    return cpu.clock;
 }
 
-int cpu_clocks() {return cpu.clock;}
-void cpu_clock_reset() {cpu.clock = 0;}
-struct cpu *get_cpu() {return &cpu;}
+void cpu_clock_reset() {
+    cpu.clock = 0;
+}
+
+bool cpu_IME() {
+    return cpu.IME;
+}
+
+struct cpu *get_cpu() {
+    return &cpu;
+}
+
+void cpu_ISR_start(uint8_t service_routine_addr) {
+    cpu.IME = 0;
+
+    cpu.SP -= 2;
+    mem_write(cpu.PC, cpu.SP, 2, &status_write);
+    cpu.PC = service_routine_addr;
+
+    cpu.clock += 5;
+    status_write = !status_write;
+}
+
+void cpu_ISR_return() {
+    cpu.PC = mem_read(cpu.SP, 2, &status_read);
+    cpu.SP -= 2;
+
+    status_read = !status_read;
+}
 
 void cpu_init(uint8_t checksum) {
     cpu.PC = 0X100;
@@ -27,12 +54,15 @@ void cpu_init(uint8_t checksum) {
     cpu.CIR = 0;
 }
 
+/* writes to flag reg, mask specifies unchanged flags */
+void flag_write(bool Z, bool N, bool H, bool C, uint8_t mask) {
+    cpu.AF.lower = (cpu.AF.lower & (mask << 4)) | ((Z << 7) & (N << 6) & (H << 5) & (C << 4));
+}
+
 /* Fetch Decode Execute of instructions */
 void cpu_exec() {
     // general help variables
     uint16_t nn;
-    bool status_read = false;
-    bool status_write = false;
     bool Z, N, H, C;
 
     // load current instruction

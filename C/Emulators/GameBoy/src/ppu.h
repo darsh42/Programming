@@ -6,7 +6,6 @@
 #define   SIGNED_ADDR(tile_num)  ((int8_t) tile_num * 16 + 0X8800)
 #define UNSIGNED_ADDR(tile_num) ((uint8_t) tile_num * 16 + 0X8000)
 #define ADDR(tile_num, mode) (mode) ? SIGNED_ADDR(tile_num): UNSIGNED_ADDR(tile_num)
-#define TEST_BIT(a, b) ((a & (1 << b)) == (1 << b))
 #define GET_BIT(a, b) ((a & (1 << b)) == (1 << b))
 #define TILEMAP(a) (a) ? 0X9C00: 0X9800
 

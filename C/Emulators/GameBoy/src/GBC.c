@@ -22,11 +22,14 @@ int main(int argc, char **argv) {
 
     bool emulate = true;
     int MAXCYCLES = 69905;
+    int oldtime = 0;
 
     while (emulate) {
-        while (cpu_clocks() < MAXCYCLES) {
+        while ((oldtime = cpu_clocks()) < MAXCYCLES) {
             cpu_exec();
             ppu_exec();
+            update_timers(oldtime, cpu_clocks());
+            handle_interrupts();
             if (debugger_update() != 0) {
                 emulate = false;
                 break;

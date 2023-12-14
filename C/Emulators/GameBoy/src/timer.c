@@ -46,7 +46,7 @@ void update_timers(int oldtime, int currenttime) {
 
             if (*timers.TIMA == 255) {
                 *timers.TIMA = *timers.TMA;
-                timer_interrupt();
+                interrupt_request(0b00000100);
             } else {
                 *timers.TIMA += cycles;
             }
