@@ -17,6 +17,8 @@ int load_rom(char **filename) {
         return 1;
     }
     fclose(rom);
+
+    return 0;
 }
 
 /* Initizializes memory and sets High RAM */
@@ -79,6 +81,12 @@ void mem_init() {
 
 /* Loads correct mapper info */
 
+/*
+** Gets memory address of location in emulator memory
+** - Used in reading and manipulating memory registers and controls
+*/
+uint8_t *mem_pointer(uint16_t addr) {return &mem.main[addr];}
+
 /* Reads size number of bytes at addr returning uint16_t and setting status */
 uint16_t mem_read(uint16_t addr, int size, bool *status) {
     uint16_t r;
@@ -111,26 +119,27 @@ void mem_write(uint16_t val, uint16_t addr, int size, bool *status) {
     return;
 }
 
-uint8_t _mem_read(uint16_t addr, int size) {
-    uint8_t data = 0;
 
-    if (addr >= 0X0000 && addr <= 0X3FFF) {
-        // ROM bank 00
-        data = mem.main[addr];
-    } else if (addr >= 0X4000 && addr <= 0X7FFF) {
-        // ROM bank 01-FF
-        data = mem.main[addr];
-    } else if (addr >= 0X8000 && addr <= 0X9FFF) {
-        // Video RAM
-        data = mem.main[addr];
-    } else if (addr >= 0XA000 && addr <= 0XBFFF) {
-        // Cartride RAM
-        data = mem.main[addr];
-    } else if (addr >= 0XC000 && addr <= 0XDFFF) {
-        // Work RAM, CGB mode switchable banks
+ uint8_t _mem_read(uint16_t addr, int size) {
+     uint8_t data = 0;
 
-    }
+     if (addr >= 0X0000 && addr <= 0X3FFF) {
+         // ROM bank 00
+         data = mem.main[addr];
+     } else if (addr >= 0X4000 && addr <= 0X7FFF) {
+         // ROM bank 01-FF
+         data = mem.main[addr];
+     } else if (addr >= 0X8000 && addr <= 0X9FFF) {
+         // Video RAM
+         data = mem.main[addr];
+     } else if (addr >= 0XA000 && addr <= 0XBFFF) {
+         // Cartride RAM
+         data = mem.main[addr];
+     } else if (addr >= 0XC000 && addr <= 0XDFFF) {
+         // Work RAM, CGB mode switchable banks
+
+     }
 
 
-    return data;
-}
+     return data;
+ }

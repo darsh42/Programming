@@ -7,6 +7,6 @@
 CC=gcc
 
 compile:
-	$(CC) debugger.c GBC.c cpu.c ppu.c apu.c mem.c sdl.c -o gameboy -g -lSDL2 -lncurses
+	$(CC) debugger.c GBC.c cpu.c ppu.c apu.c mem.c sdl.c -o ../bin/gameboy -g -lSDL2 -lncurses
 
 # end
