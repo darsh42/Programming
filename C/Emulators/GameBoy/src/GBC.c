@@ -5,6 +5,8 @@ void gameboy_init() {
     mem_init();
     cpu_init();
     ppu_init();
+    init_timer();
+    init_handler();
     // apu_init();
 
     debugger_init();

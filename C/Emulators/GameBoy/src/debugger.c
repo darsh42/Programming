@@ -82,13 +82,13 @@ int debugger_update() {
 
     // PPU Register
     mvprintw(17, 2, "PPU Registers");
-    mvprintw(18, 2, "LCDC: 0X%04x", debugger.ppu->LCDC);
-    mvprintw(19, 2, "LCDS: 0X%04x", debugger.ppu->LCDS);
+    mvprintw(18, 2, "LCDC: 0X%04x", *debugger.ppu->LCDC);
+    mvprintw(19, 2, "LCDS: 0X%04x", *debugger.ppu->LCDS);
 
-    mvprintw(20, 2, "LY: 0X%04x", debugger.ppu->LY);
-    mvprintw(21, 2, "LYC: 0X%04x", debugger.ppu->LYC);
-    mvprintw(22, 2, "(SCX, SCY): {0X%04x, 0X%04x}", debugger.ppu->SCX, debugger.ppu->SCY);
-    mvprintw(23, 2, "(WX, WY): {0X%04x, 0X%04x}", debugger.ppu->WX, debugger.ppu->WY);
+    mvprintw(20, 2, "LY: 0X%04x", *debugger.ppu->LY);
+    mvprintw(21, 2, "LYC: 0X%04x", *debugger.ppu->LYC);
+    mvprintw(22, 2, "(SCX, SCY): {0X%04x, 0X%04x}", *debugger.ppu->SCX, *debugger.ppu->SCY);
+    mvprintw(23, 2, "(WX, WY): {0X%04x, 0X%04x}", *debugger.ppu->WX, *debugger.ppu->WY);
 
     // Memory Registers
 

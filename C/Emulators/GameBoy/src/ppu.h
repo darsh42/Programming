@@ -20,12 +20,12 @@ struct ppu {
     ** - Determine Viewport
     ** - Window overlay
     */
-    uint8_t SCX, SCY;
-    uint8_t WX, WY;
+    uint8_t *SCX, *SCY;
+    uint8_t *WX, *WY;
 
     // LY - Scanline
-    uint8_t LY;
-    uint8_t LYC;
+    uint8_t *LY;
+    uint8_t *LYC;
 
     /*
     ** LCD Control register:
@@ -38,7 +38,7 @@ struct ppu {
     **   1 - OBJ enable - 0 = off, 1 = on
     **   0 - BG & Window enable/priority - 0 = off, 1 = on
     */
-    uint8_t LCDC;
+    uint8_t *LCDC;
 
     /*
     ** LCD Status register:
@@ -52,7 +52,7 @@ struct ppu {
     **   1 - ppu mode
     **   0 - ppu mode
     */
-    uint8_t LCDS;
+    uint8_t *LCDS;
 
     // Window
     bool usingWin;
@@ -60,9 +60,15 @@ struct ppu {
     // misc
     uint16_t background_mem;
     bool status_read;
+
+    int m_scanline_counter;
 };
 
+/* Interrupt functions */
+void interrupt_request(uint8_t request);
+
 /* Memory functions */
+extern uint8_t *mem_pointer(uint16_t addr);
 extern uint16_t mem_read(uint16_t addr, int size, bool *status);
 extern void mem_write(uint16_t val, uint16_t addr, int size, bool *status);
 

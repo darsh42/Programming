@@ -28,57 +28,61 @@ void ppu_init() {
             ppu.display[x][y][2] = 0;
         }
     }
-}
 
-void ppu_exec() {
     // Get LCDC regs
-    ppu.LCDC = mem_read(0XFF40, 1, &ppu.status_read);
-    ppu.LCDS = mem_read(0XFF41, 1, &ppu.status_read);
+    ppu.LCDC = mem_pointer(mLCDC);
+    ppu.LCDS = mem_pointer(mLCDS);
 
     // get viewport regs
-    ppu.SCY = mem_read(0XFF42, 1, &ppu.status_read);
-    ppu.SCX = mem_read(0XFF43, 1, &ppu.status_read);
+    ppu.SCY = mem_pointer(mSCY);
+    ppu.SCX = mem_pointer(mSCX);
 
     // get window regs
-    ppu.WY = mem_read(0XFF4A, 1, &ppu.status_read);
-    ppu.WX = mem_read(0XFF4B, 1, &ppu.status_read) - 7;
+    ppu.WY = mem_pointer(mWY);
+    ppu.WX = mem_pointer(mWX);
+    // ppu.WX = mem_pointer(0XFF4B); 1, &ppu.status_read) - 7;
 
     // LY and LY compare
-    ppu.LY = mem_read(0XFF44, 1, &ppu.status_read);
-    ppu.LYC = mem_read(0XFF45, 1, &ppu.status_read);
+    ppu.LY = mem_pointer(mLY);
+    ppu.LYC = mem_pointer(mLYC);
 
-    if (TEST_BIT(ppu.LCDC, 5)) {
-        if (ppu.WY <= ppu.LY)
+    ppu.m_scanline_counter = 456;
+}
+
+/* renders background to scanline */
+void ppu_render_background() {
+    if (TEST_BIT(*ppu.LCDC, 5)) {
+        if (*ppu.WY <= *ppu.LY)
             ppu.usingWin = true;
         else
             ppu.usingWin = false;
     }
 
     if (ppu.usingWin) {
-        if (TEST_BIT(ppu.LCDC, 3))
+        if (TEST_BIT(*ppu.LCDC, 3))
             ppu.background_mem = 0X9C00;
         else
             ppu.background_mem = 0X9800;
     } else {
-        if (TEST_BIT(ppu.LCDC, 6))
+        if (TEST_BIT(*ppu.LCDC, 6))
             ppu.background_mem = 0X9C00;
         else
             ppu.background_mem = 0X9800;
     }
 
     // offsets by scrollY
-    uint8_t Ypos = ppu.LY + ppu.SCY;
+    uint8_t Ypos = *ppu.LY + *ppu.SCY;
     uint8_t tile_row = ((uint8_t)(Ypos / 8)) * 32;
 
     // loops through each pixel in scanline
     for (int pixel = 0; pixel < 160; pixel++) {
         // offsets by scrollX
-        uint8_t Xpos = pixel + ppu.SCX;
+        uint8_t Xpos = pixel + *ppu.SCX;
 
         // if using windows
-        if (TEST_BIT(ppu.LCDC, 5)) {
-            if (pixel >= ppu.WX) {
-                Xpos = pixel - ppu.WX;
+        if (TEST_BIT(*ppu.LCDC, 5)) {
+            if (pixel >= *ppu.WX - 7) {
+                Xpos = pixel - *ppu.WX - 7;
             }
         }
 
@@ -89,7 +93,7 @@ void ppu_exec() {
 
         // get row of the tile
         uint8_t line = 2 * (Ypos % 8);
-        uint16_t tile_addr = ADDR(tile_index, TEST_BIT(ppu.LCDC, 4)) + line;
+        uint16_t tile_addr = ADDR(tile_index, TEST_BIT(*ppu.LCDC, 4)) + line;
 
         // get tile data
         uint16_t tile_data_1 = mem_read(tile_addr, 1, &ppu.status_read);
@@ -121,4 +125,33 @@ void ppu_exec() {
         ppu.display[pixel][final_y][1] = green;
         ppu.display[pixel][final_y][2] = blue;
     }
+}
+
+void ppu_render_sprites() {
+
+}
+
+void ppu_exec(int oldtime, int currenttime) {
+    int cycles = currenttime - oldtime;
+
+    // set LCD status
+
+    if (LCD_enabled()) ppu.m_scanline_counter -= cycles; else return;
+
+    if (ppu.m_scanline_counter > 0) return;
+
+    (*ppu.LY)++;
+
+    if (*ppu.LY < 144)
+        // render scanline
+        ppu_render_background();
+
+    else if (*ppu.LY == 144)
+        // VBlank interrupt
+        interrupt_request(0b00000001);
+    else if (*ppu.LY > 153)
+        // reset LY
+        *ppu.LY = 0X00;
+
+    return;
 }

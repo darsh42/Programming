@@ -120,7 +120,7 @@ void mem_write(uint16_t val, uint16_t addr, int size, bool *status) {
 }
 
 
- uint8_t _mem_read(uint16_t addr, int size) {
+ uint8_t _mem_read(uint16_t addr) {
      uint8_t data = 0;
 
      if (addr >= 0X0000 && addr <= 0X3FFF) {
@@ -137,9 +137,56 @@ void mem_write(uint16_t val, uint16_t addr, int size, bool *status) {
          data = mem.main[addr];
      } else if (addr >= 0XC000 && addr <= 0XDFFF) {
          // Work RAM, CGB mode switchable banks
-
+         data = mem.main[addr];
+     } else if (addr >= 0XE000 && addr <= 0XFDFF) {
+         // Echo RAM, prohibited area by nintendo
+     } else if (addr >= 0XFE00 && addr <= 0XFE9F) {
+         // Object Attribute Memory
+         data = mem.main[addr];
+     } else if (addr >= 0XFF00 && addr <= 0XFF7F) {
+         // I/O Registers
+         data = mem.main[addr];
+     } else if (addr >= 0XFF80 && addr <= 0XFFFE) {
+         // High RAM
+         data = mem.main[addr];
      }
 
 
      return data;
+ }
+
+ void _mem_write(uint16_t addr, uint8_t data) {
+
+     if (addr >= 0X0000 && addr <= 0X3FFF) {
+         // ROM bank 00
+         mem.main[addr] = data;
+     } else if (addr >= 0X4000 && addr <= 0X7FFF) {
+         // ROM bank 01-FF
+         mem.main[addr] = data;
+     } else if (addr >= 0X8000 && addr <= 0X9FFF) {
+         // Video RAM
+         mem.main[addr] = data;
+     } else if (addr >= 0XA000 && addr <= 0XBFFF) {
+         // Cartride RAM
+         mem.main[addr] = data;
+     } else if (addr >= 0XC000 && addr <= 0XDFFF) {
+         // Work RAM, CGB mode switchable banks
+         mem.main[addr] = data;
+     } else if (addr >= 0XE000 && addr <= 0XFDFF) {
+         // Echo RAM, prohibited area by nintendo
+     } else if (addr >= 0XFE00 && addr <= 0XFE9F) {
+         // Object Attribute Memory
+         mem.main[addr] = data;
+     } else if (addr >= 0XFF00 && addr <= 0XFF7F) {
+         // I/O Registers
+
+         if (addr == mDIV) data = 0;
+         if (addr == mLY) data = 0;
+
+
+         mem.main[addr] = data;
+     } else if (addr >= 0XFF80 && addr <= 0XFFFE) {
+         // High RAM
+         mem.main[addr] = data;
+     }
  }

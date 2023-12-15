@@ -3,12 +3,6 @@
 
 #include "common.h"
 
-#define mDIV 0XFF04
-#define mTIMA 0XFF05
-#define mTMA 0XFF06
-#define mTAC 0XFF07
-
-#define CPU_CLOCK 4194304
 
 struct timers {
     /*
