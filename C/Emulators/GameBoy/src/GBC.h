@@ -4,7 +4,7 @@
 #include "common.h"
 
 // Load ROM
-extern int load_rom(char **filename);
+extern int mem_cartridge_load(char **filename);
 
 // cpu clock handles
 int cpu_clocks();

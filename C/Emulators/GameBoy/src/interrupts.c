@@ -2,6 +2,10 @@
 
 struct interrupt_handler handler;
 
+struct interrupt_handler *get_handler() {
+    return &handler;
+}
+
 void init_handler() {
     handler.IF = mem_pointer(mIF);
     handler.IE = mem_pointer(mIE);

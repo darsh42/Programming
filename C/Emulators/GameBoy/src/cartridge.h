@@ -1,9 +1,18 @@
 #ifndef CARTRIDGE_H_INCLUDED
 #define CARTRIDGE_H_INCLUDED
 
-#include "GBC.h"
+#include "common.h"
+
+#define HEADER_SIZE 0X004F
 
 struct cartridge_header {
+    /*
+    ** Entry Point
+    */
+    uint8_t entry[3];
+    uint8_t nintendo_logo[49];
+    uint8_t Title[16];
+
     /*
     ** Specifies if GameBoy Colour:
     ** 0X80 - Backwards compatible

@@ -7,10 +7,27 @@
 #include <stdbool.h>
 
 #define TEST_BIT(a, b) ((a & (1 << b)) == (1 << b))
+#define RESET_BIT(a, b) (a & ~(1 << b))
+#define SET_BIT(a, b) (a | (1 << b))
 
 #define CPU_CLOCK 4194304
 
 // memory location defines
+// Cartridge locations
+#define mHeaderStart 0X100
+#define mGBC_flag 0X0143
+#define mNlic 0X0144
+#define mSGB_flag 0X0146
+#define mCartridge_type 0X0147
+#define mROM_size 0X0148
+#define mRAM_size 0X0149
+#define mDest_code 0X014A
+#define mOlic 0X014B
+#define mROM_ver_num 0X014C
+#define mHeader_Checksum 0X014D
+#define mGlobal_Checksum 0X014E
+
+// PPU locations
 #define mLCDC 0XFF40
 #define mLCDS 0XFF41
 #define mSCX 0XFF42
@@ -20,6 +37,7 @@
 #define mLY 0XFF44
 #define mLYC 0XFF45
 
+// timer locations
 #define mDIV 0XFF04
 #define mTIMA 0XFF05
 #define mTMA 0XFF06

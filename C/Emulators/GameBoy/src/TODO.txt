@@ -1,2 +1,10 @@
-Create proper start up sequence, set all correct register values and memory locations
-	-> Info on Pandocs and Codeslinger pdf
+TODO:
+- Fix Display renderer
+- Create LCD Status routine
+- Create ppu_render_sprites routine
+- implement all Interrupt service routines
+
+DONE:
+- Check and Verify memory management routines and ROM/RAM bank switching
+- Create proper start up sequence, set all correct register values and memory locations
+- Create Cartridge header and load ROM correctly

@@ -3,11 +3,13 @@
 struct ppu ppu;
 
 struct ppu *get_ppu() {return &ppu;}
+
 // BUG: cannot get display for rendering
 uint8_t ***ppu_get_display() {return (uint8_t ***) ppu.display;}
 
+/* gets palette colours for pixels */
 int get_colour(uint8_t colour_num) {
-    uint8_t palette = mem_read(0XFF47, 1, &ppu.status_read);
+    uint8_t palette = mem_read(0XFF47);
     int hi, lo;
 
     switch(colour_num) {
@@ -17,9 +19,10 @@ int get_colour(uint8_t colour_num) {
         case 3: hi = 7; lo = 0; break;
     }
 
-    return (GET_BIT(palette, hi) << 1) | (GET_BIT(palette, lo));
+    return (TEST_BIT(palette, hi) << 1) | (TEST_BIT(palette, lo));
 }
 
+/* initializes ppu */
 void ppu_init() {
     for (int x = 0; x < 160; x++) {
         for (int y = 0; y < 144; y++) {
@@ -89,21 +92,21 @@ void ppu_render_background() {
         uint8_t tile_col = (uint8_t) Xpos/8;
 
         // get the tile number from the tile map
-        uint8_t tile_index = mem_read(ppu.background_mem + tile_row + tile_col, 1, &ppu.status_read);
+        uint8_t tile_index = mem_read(ppu.background_mem + tile_row + tile_col);
 
         // get row of the tile
         uint8_t line = 2 * (Ypos % 8);
         uint16_t tile_addr = ADDR(tile_index, TEST_BIT(*ppu.LCDC, 4)) + line;
 
         // get tile data
-        uint16_t tile_data_1 = mem_read(tile_addr, 1, &ppu.status_read);
-        uint16_t tile_data_2 = mem_read(tile_addr + 1, 1, &ppu.status_read);
+        uint16_t tile_data_1 = mem_read(tile_addr);
+        uint16_t tile_data_2 = mem_read(tile_addr + 1);
 
         int colourbit = Xpos % 8;
         colourbit -= 7;
         colourbit *= -1;
 
-        int colournum = (GET_BIT(tile_data_2, colourbit)) | (GET_BIT(tile_data_1, colourbit));
+        int colournum = (TEST_BIT(tile_data_2, colourbit)) | (TEST_BIT(tile_data_1, colourbit));
 
 
         int red = 0;
@@ -116,7 +119,7 @@ void ppu_render_background() {
             case 2: red = 0X77; blue = 0X77; green = 0X77; break; // DARK GREY
         }
 
-        int final_y = mem_read(0XFF44, 1, &ppu.status_read);
+        int final_y = mem_read(0XFF44);
 
         if ((final_y < 0 || final_y > 143) || (pixel < 0 || pixel > 159))
             continue;
@@ -127,20 +130,89 @@ void ppu_render_background() {
     }
 }
 
+/* renders sprites to scanline */
 void ppu_render_sprites() {
 
+}
+
+void LCD_status() {
+    if (!TEST_BIT(*ppu.LCDC, 7)) {
+        // If the display is turened off then set the mode to 0X01
+        ppu.m_scanline_counter = 456;
+        *ppu.LY = 0;
+
+        // keep all BITs execpt mode specifiers
+        *ppu.LCDS &= 0b11111100;
+        *ppu.LCDS = SET_BIT(*ppu.LCDS, 0);
+        return;
+    }
+
+    uint8_t cur_mode = *ppu.LCDS & 0b00000011;
+    uint8_t mode = 0;
+    bool req_interrupt = false;
+
+    if (*ppu.LY >= 144) {
+        // mode 0X01: Vertical Blank
+        mode = 1;
+        *ppu.LCDS = SET_BIT(*ppu.LCDS, 0);
+        *ppu.LCDS = RESET_BIT(*ppu.LCDS, 1);
+        req_interrupt = TEST_BIT(*ppu.LCDS, 4);
+    } else {
+        if (ppu.m_scanline_counter > 456 - 80) {
+            // mode 0X02: OAM scan sequence
+            mode = 2;
+            *ppu.LCDS = RESET_BIT(*ppu.LCDS, 0);
+            *ppu.LCDS = SET_BIT(*ppu.LCDS, 1);
+            req_interrupt = TEST_BIT(*ppu.LCDS, 5);
+        } else if (ppu.m_scanline_counter > 456 - 172 - 80) {
+            // mode 0X03: Drawing pixels
+            mode = 3;
+            *ppu.LCDS = SET_BIT(*ppu.LCDS, 0);
+            *ppu.LCDS = SET_BIT(*ppu.LCDS, 1);
+        } else {
+            // mode 0X00: Horizontal Blank
+            mode = 0;
+            *ppu.LCDS = RESET_BIT(*ppu.LCDS, 0);
+            *ppu.LCDS = RESET_BIT(*ppu.LCDS, 1);
+            req_interrupt = TEST_BIT(*ppu.LCDS, 3);
+        }
+
+        // if mode has changed request interrupt
+        if (req_interrupt && (mode != cur_mode)) {
+            interrupt_request(0b00000010);
+        }
+
+        // check coincidence flag
+        if (*ppu.LYC == *ppu.LY) {
+            *ppu.LCDS = SET_BIT(*ppu.LCDS, 2);
+
+            // if interrupt is set for LY == LYC
+            if (TEST_BIT(*ppu.LCDS, 6)) {
+                interrupt_request(0b00000010);
+            }
+        } else {
+            *ppu.LCDS = RESET_BIT(*ppu.LCDS, 2);
+        }
+    }
 }
 
 void ppu_exec(int oldtime, int currenttime) {
     int cycles = currenttime - oldtime;
 
     // set LCD status
+    LCD_status();
 
-    if (LCD_enabled()) ppu.m_scanline_counter -= cycles; else return;
+    // if LCD is on
+    if (TEST_BIT(*ppu.LCDC, 7))
+        ppu.m_scanline_counter -= cycles;
+    else
+        return;
 
-    if (ppu.m_scanline_counter > 0) return;
+    if (ppu.m_scanline_counter > 0)
+        return;
 
     (*ppu.LY)++;
+    ppu.m_scanline_counter = 456;
 
     if (*ppu.LY < 144)
         // render scanline

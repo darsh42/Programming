@@ -2,6 +2,11 @@
 
 struct timers timers;
 
+
+struct timers *get_timers() {
+    return &timers;
+}
+
 void init_timer() {
     timers.DIV = mem_pointer(mDIV);
     timers.TIMA = mem_pointer(mTIMA);

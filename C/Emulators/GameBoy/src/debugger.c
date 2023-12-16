@@ -24,11 +24,10 @@ int debugger_get_addr() {
     return STR_TO_HEX(addr);
 }
 
-void debugger_seek_mem(uint16_t base, int maxY, int maxX) {
-    bool status;
+void debugger_seek_mem(uint16_t base) {
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
-            mvprintw(3+i, 28+j*6, "%04x", mem_read(base + 8*i + j, 1, &status));
+            mvprintw(3+i, 28+j*6, "%02x", mem_read(base + 8*i + j));
         }
     }
 
@@ -39,6 +38,8 @@ void debugger_init() {
     debugger.cpu = get_cpu();
     debugger.ppu = get_ppu();
     debugger.mem = get_mem();
+    debugger.timers = get_timers();
+    debugger.handler = get_handler();
 
     initscr(); noecho(); curs_set(0);
 }
@@ -69,8 +70,8 @@ int debugger_update() {
     mvprintw(3, 2,"CPU Registers");
     mvprintw(4, 2,"clocks: %d", debugger.cpu->clock);
 
-    mvprintw(5, 2,"PC: 0X%08x", debugger.cpu->PC);
-    mvprintw(6, 2,"CIR: 0X%08x", debugger.cpu->CIR);
+    mvprintw(5, 2,"PC: 0X%04x", debugger.cpu->PC);
+    mvprintw(6, 2,"CIR: 0X%02x", debugger.cpu->CIR);
     mvprintw(7, 2,"SP: 0X%04x", debugger.cpu->SP);
     mvprintw(8, 2,"AF: 0X%04x 0X%04x", debugger.cpu->AF.upper, debugger.cpu->AF.lower);
     mvprintw(9, 2,"BC: 0X%04x 0X%04x", debugger.cpu->BC.upper, debugger.cpu->BC.lower);
@@ -90,7 +91,14 @@ int debugger_update() {
     mvprintw(22, 2, "(SCX, SCY): {0X%04x, 0X%04x}", *debugger.ppu->SCX, *debugger.ppu->SCY);
     mvprintw(23, 2, "(WX, WY): {0X%04x, 0X%04x}", *debugger.ppu->WX, *debugger.ppu->WY);
 
+    // TODO:
     // Memory Registers
+    mvprintw(2, 2, "TITLE: %s", debugger.mem->cartridge_header.Title);
+
+    // Timer Registers
+
+    // Interrupt Requests
+
 
     refresh();
 
@@ -118,7 +126,7 @@ int debugger_update() {
         mvprintw(yMax - 2, 72, "0X%04x", base_addr);
     }
 
-    debugger_seek_mem(base_addr, yMax, xMax);
+    // debugger_seek_mem(base_addr);
     refresh();
 
     return 0;

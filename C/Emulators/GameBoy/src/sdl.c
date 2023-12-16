@@ -1,6 +1,4 @@
 #include "sdl.h"
-#include "GBC.h"
-#include <SDL2/SDL_render.h>
 
 static SDL_Window *win;
 static SDL_Renderer *rend;

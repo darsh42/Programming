@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (load_rom(argv+=1) != 0) return 1;
+    if (mem_cartridge_load(argv+=1) != 0) return 1;
 
     gameboy_init();
 

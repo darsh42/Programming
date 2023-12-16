@@ -20,7 +20,6 @@ typedef union {
         uint16_t lower: 8;
     };
     uint16_t full;
-
 } reg_u;
 
 /* cpu state struct */
@@ -55,13 +54,13 @@ struct cpu {
     /*
     ** Convenience attrs
     */
-    bool prefix;
     int clock;
+    bool prefix;
     uint8_t CIR;
 };
 
 /* Memory functions */
-extern uint16_t mem_read(uint16_t addr, int size, bool *status);
-extern void mem_write(uint16_t val, uint16_t addr, int size, bool *status);
+extern uint8_t mem_read(uint16_t addr);
+extern void mem_write(uint16_t addr, uint8_t data);
 
 #endif // CPU_H_INCLUDED

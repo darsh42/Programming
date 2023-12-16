@@ -1,8 +1,6 @@
 #include "cpu.h"
 
 struct cpu cpu;
-bool status_read = false;
-bool status_write = false;
 
 int cpu_clocks() {
     return cpu.clock;
@@ -23,19 +21,16 @@ struct cpu *get_cpu() {
 void cpu_ISR_start(uint8_t service_routine_addr) {
     cpu.IME = 0;
 
-    cpu.SP -= 2;
-    mem_write(cpu.PC, cpu.SP, 2, &status_write);
+    mem_write(--cpu.SP, cpu.PC);
+    mem_write(--cpu.SP, cpu.PC >> 8);
     cpu.PC = service_routine_addr;
 
     cpu.clock += 5;
-    status_write = !status_write;
 }
 
 void cpu_ISR_return() {
-    cpu.PC = mem_read(cpu.SP, 2, &status_read);
-    cpu.SP -= 2;
-
-    status_read = !status_read;
+    cpu.PC = mem_read(cpu.SP++) << 8;
+    cpu.PC |= mem_read(cpu.SP++);
 }
 
 void cpu_init(uint8_t checksum) {
@@ -66,7 +61,7 @@ void cpu_exec() {
     bool Z, N, H, C;
 
     // load current instruction
-    cpu.CIR = mem_read(cpu.PC++, 1, &status_read);
+    cpu.CIR = mem_read(cpu.PC++);
 
     if (cpu.prefix) {
         /* Prefix OPcodes */
@@ -93,8 +88,8 @@ void cpu_exec() {
             case(0X0D): reg = &cpu.HL; upper = 0; mem = 0; cpu.clock += 8; break;
             case(0X0F): reg = &cpu.AF; upper = 1; mem = 0; cpu.clock += 8; break;
 
-            case(0X06): nn = mem_read(cpu.HL.full, 1, &status_read); mem = 1; cpu.clock += 16; break;
-            case(0X0E): nn = mem_read(cpu.HL.full, 1, &status_read); mem = 1; cpu.clock += 16; break;
+            case(0X06): nn = mem_read(cpu.HL.full); mem = 1; cpu.clock += 16; break;
+            case(0X0E): nn = mem_read(cpu.HL.full); mem = 1; cpu.clock += 16; break;
         }
 
         // prefixed opcode implementation
@@ -112,7 +107,7 @@ void cpu_exec() {
                         C = CARRY(nn, 1, <<);
 
                         nn <<= 1;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                         flag_write(Z, N, H, C, 0b0000);
                     } else if (upper) {
                         Z = (reg->upper << 1) == 0;
@@ -144,7 +139,7 @@ void cpu_exec() {
 
                         nn <<= 1;
                         nn |= FC;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                         flag_write(Z, N, H, C, 0b0000);
                     } else if (upper) {
                         Z = ((reg->upper << 1) | FC) == 0;
@@ -177,7 +172,7 @@ void cpu_exec() {
                         C = CARRY(nn, 1, <<);
 
                         nn <<= 1;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                         flag_write(Z, N, H, C, 0b0000);
                     } else if (upper) {
                         Z = (reg->upper << 1) == 0;
@@ -208,7 +203,7 @@ void cpu_exec() {
                         C = 0;
 
                         nn = (nn & 0XF << 4) | (nn >> 4);
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                         flag_write(Z, N, H, C, 0b0000);
                     } else if (upper) {
                         Z = ((reg->upper & 0XF << 4) | (reg->upper >> 4)) == 0;
@@ -342,7 +337,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn &= 0b11111110;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper &= 0b11111110;
                     } else {
@@ -355,7 +350,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn &= 0b11111011;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper &= 0b11111011;
                     } else {
@@ -368,7 +363,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn &= 0b11101111;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper &= 0b11101111;
                     } else {
@@ -381,7 +376,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn &= 0b10111111;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper &= 0b10111111;
                     } else {
@@ -394,7 +389,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn |= 0b00000001;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper |= 0b00000001;
                     } else {
@@ -407,7 +402,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn |= 0b00000100;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper |= 0b00000100;
                     } else {
@@ -420,7 +415,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn |= 0b00010000;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper |= 0b00010000;
                     } else {
@@ -433,7 +428,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn |= 0b01000000;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper |= 0b01000000;
                     } else {
@@ -455,7 +450,7 @@ void cpu_exec() {
                         C = nn & 0X01;
 
                         nn <<= 1;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                         flag_write(Z, N, H, C, 0b0000);
                     } else if (upper) {
                         Z = (reg->upper >> 1) == 0;
@@ -487,7 +482,7 @@ void cpu_exec() {
 
                         nn >>= 1;
                         nn |= (FC >> 8);
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                         flag_write(Z, N, H, C, 0b0000);
                     } else if (upper) {
                         Z = ((reg->upper >> 1) | (FC >> 8)) == 0;
@@ -520,7 +515,7 @@ void cpu_exec() {
                         C = nn & 0X01;
 
                         nn = (nn & 0X80) | (nn >> 7);
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                         flag_write(Z, N, H, C, 0b0000);
                     } else if (upper) {
                         Z = (reg->upper >> 1) == 0;
@@ -551,7 +546,7 @@ void cpu_exec() {
                         C = nn & 0X01;
 
                         nn <<= 1;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                         flag_write(Z, N, H, C, 0b0000);
                     } else if (upper) {
                         Z = (reg->upper >> 1) == 0;
@@ -685,7 +680,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn &= 0b11111101;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper &= 0b11111101;
                     } else {
@@ -698,7 +693,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn &= 0b11110111;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper &= 0b11110111;
                     } else {
@@ -711,7 +706,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn &= 0b11011111;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper &= 0b11011111;
                     } else {
@@ -724,7 +719,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn &= 0b01111111;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper &= 0b01111111;
                     } else {
@@ -737,7 +732,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn |= 0b00000010;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper |= 0b00000010;
                     } else {
@@ -750,7 +745,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn |= 0b00001000;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper |= 0b00001000;
                     } else {
@@ -763,7 +758,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn |= 0b00100000;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper |= 0b00100000;
                     } else {
@@ -776,7 +771,7 @@ void cpu_exec() {
                     * FLAGS: -,-,-,-               */
                     if (mem) {
                         nn |= 0b10000000;
-                        mem_write(nn, cpu.HL.full, 1, &status_write);
+                        mem_write(cpu.HL.full, nn);
                     } else if (upper) {
                         reg->upper |= 0b10000000;
                     } else {
@@ -796,18 +791,17 @@ void cpu_exec() {
             case(0X01):
                 /* LD BC, NN - 3 bytes, 12 cycles  *
                     * Loads 16bit value into register */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if (status_read) {
-                    cpu.BC.full = nn;
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.PC++) << 8;
+                nn |= mem_read(cpu.PC++);
+
+                cpu.BC.full = nn;
+
                 cpu.clock += 12;
                 break;
             case(0X02):
                 /* LD (BC), A - 1 byte, 8 cycles *
                     * Load 8 bit A into ABS addr BC */
-                mem_write(cpu.AF.upper, cpu.BC.full, 1, &status_read);
+                mem_write(cpu.BC.full, cpu.AF.upper);
                 cpu.clock += 8;
                 break;
             case(0X03):
@@ -848,11 +842,8 @@ void cpu_exec() {
                 /* LD B, d8 - bytes 2, cycles 8 *
                     * Load 8bit value into B       *
                     * FLAGS: -,-,-,-,              */
-                nn = mem_read(cpu.PC, 1, &status_read);
-                if (status_read) {
-                    cpu.BC.upper = nn;
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.PC);
+                cpu.BC.upper = nn;
                 cpu.clock += 8;
                 break;
             case(0X07):
@@ -873,12 +864,9 @@ void cpu_exec() {
                 /* LD (a16), SP - 3 bytes, 20 cycles *
                     * Load to (a16) value in SP         *
                     * FLAGS: -,-,-,-                    */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if (status_read) {
-                    mem_write(cpu.SP, nn, 2, &status_write);
-                    status_read = !status_read;
-                }
+                cpu.SP = mem_read(cpu.PC++) << 8;
+                cpu.SP |= mem_read(cpu.PC++);
+
                 cpu.clock += 20;
                 break;
             case(0X09):
@@ -899,11 +887,8 @@ void cpu_exec() {
                 /* LD A, (BC) - 1 byte, 8 cycles *
                     * Load (BC) to reg A            *
                     * FLAGS: -,-,-,-                */
-                nn = mem_read(cpu.BC.full, 1, &status_read);
-                if (status_read) {
-                    cpu.AF.upper = nn;
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.BC.full);
+                cpu.AF.upper = nn;
                 cpu.clock += 8;
                 break;
             case(0X0B):
@@ -945,12 +930,9 @@ void cpu_exec() {
                 /* LD C, d8 - 2 bytes, 8 cycles *
                     * Load byte into C             *
                     * FLAGS: -,-,-,-,              */
-                nn = mem_read(cpu.PC, 1, &status_read);
+                nn = mem_read(cpu.PC);
                 cpu.PC+=1;
-                if (status_read) {
-                    cpu.BC.lower = nn;
-                    status_read = false;
-                }
+                cpu.BC.lower = nn;
                 cpu.clock += 8;
                 break;
             case(0X0F): {
@@ -972,11 +954,10 @@ void cpu_exec() {
                 /* LD DE, NN - 3 bytes, 12 cycles  *
                     * Loads 16bit value into register *
                     * FLAGS: -,-,-,-                  */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                if (status_read) {
-                    cpu.DE.full = nn;
-                    status_read = !status_read;
-                }
+
+                cpu.DE.full = mem_read(cpu.PC++) << 8;
+                cpu.DE.full |= mem_read(cpu.PC++);
+
                 cpu.clock += 12;
                 break;
             case(0X11):
@@ -988,7 +969,7 @@ void cpu_exec() {
                 /* LD [DE], A - 1 byte, 8 cycles *
                     * Load A into [DE]              *
                     * FLAGS: -,-,-,-                */
-                mem_write(cpu.AF.upper, cpu.DE.full, 1, &status_write);
+                mem_write(cpu.DE.full, cpu.AF.upper);
                 cpu.clock += 8;
                 break;
             case(0X13):
@@ -1029,12 +1010,9 @@ void cpu_exec() {
                 /* LD D, n8 - 2 bytes, 20 cycles *
                     * Load to D value in n8         *
                     * FLAGS: -,-,-,-                */
-                nn = mem_read(cpu.PC, 1, &status_read);
+                nn = mem_read(cpu.PC);
                 cpu.PC+=1;
-                if (status_read) {
-                    cpu.DE.upper = nn;
-                    status_read = !status_read;
-                }
+                cpu.DE.upper = nn;
                 cpu.clock += 20;
                 break;
             case(0X17): {
@@ -1057,12 +1035,9 @@ void cpu_exec() {
                 /* JR e8 - 2bytes, 12 cycles  *
                     * Jump to PC + e8            *
                     * FLAGS: -,-,-,-             */
-                nn = mem_read(cpu.PC, 1, &status_read);
+                nn = mem_read(cpu.PC);
                 cpu.PC+=1;
-                if (status_read) {
-                    cpu.PC += nn;
-                    status_read = !status_read;
-                }
+                cpu.PC += nn;
                 cpu.clock += 12;
                 break;
             case(0X19):
@@ -1083,7 +1058,7 @@ void cpu_exec() {
                 /* LD A, [DE] - 1 byte, 8 cycles *
                     * Load [DE] to reg A            *
                     * FLAGS: -,-,-,-                */
-                mem_read(cpu.DE.full, 1, &status_read);
+                mem_read(cpu.DE.full);
                 cpu.clock += 8;
                 break;
             case(0X1B):
@@ -1125,12 +1100,9 @@ void cpu_exec() {
                 /* LD C, d8 - 2 bytes, 8 cycles *
                     * Load byte into C             *
                     * FLAGS: -,-,-,-,              */
-                nn = mem_read(cpu.PC, 1, &status_read);
+                nn = mem_read(cpu.PC);
                 cpu.PC+=1;
-                if (status_read) {
-                    cpu.DE.lower = nn;
-                    status_read = false;
-                }
+                cpu.DE.lower = nn;
                 cpu.clock += 8;
                 break;
             case(0X1F): {
@@ -1154,30 +1126,23 @@ void cpu_exec() {
                     * Jump to PC + e8 if not C      *
                     * FLAGS: -,-,-,-                */
                 C = cpu.AF.lower & 0X40 >> 4;
-                nn = mem_read(cpu.PC, 1, &status_read);
+                nn = mem_read(cpu.PC);
                 cpu.PC+=1;
-                if (status_read && !C) {
-                    cpu.PC += nn;
-                    status_read = !status_read;
-                }
+                cpu.PC += nn;
                 cpu.clock += 12;
                 break;
             case(0X21):
                 /* LD RR, NN - 3 bytes, 12 cycles  *
                     * Loads 16bit value into register */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if (status_read) {
-                    cpu.HL.full = nn;
-                    status_read = !status_read;
-                }
+                cpu.HL.full = mem_read(cpu.PC++) << 8;
+                cpu.HL.full |= mem_read(cpu.PC++);
                 cpu.clock += 12;
                 break;
             case(0X22):
                 /* LD [HL+], A - 1 byte, 8 cycles *
                     * Load A into [HL+]              *
                     * FLAGS: -,-,-,-                 */
-                mem_write(cpu.AF.upper, cpu.HL.full + 1, 1, &status_write);
+                mem_write(cpu.HL.full + 1, cpu.AF.upper);
                 cpu.clock += 8;
                 break;
             case(0X23):
@@ -1218,12 +1183,9 @@ void cpu_exec() {
                 /* LD H, n8 - 2 bytes, 20 cycles *
                     * Load to D value in n8         *
                     * FLAGS: -,-,-,-                */
-                nn = mem_read(cpu.PC, 1, &status_read);
+                nn = mem_read(cpu.PC);
                 cpu.PC += 1;
-                if (status_read) {
-                    cpu.HL.upper = nn;
-                    status_read = !status_read;
-                }
+                cpu.HL.upper = nn;
                 cpu.clock += 20;
                 break;
             case(0X27):
@@ -1252,13 +1214,13 @@ void cpu_exec() {
                 /* JR Z, e8 - 2bytes, 12 cycles  *
                     * Jump to PC + e8 if Z          *
                     * FLAGS: -,-,-,-                */
-                Z = cpu.AF.lower & 0X80 >> 7;
-                nn = mem_read(cpu.PC, 1, &status_read);
                 cpu.PC += 1;
-                if (status_read && Z) {
-                    cpu.PC += nn;
-                    status_read = !status_read;
-                }
+
+                Z = cpu.AF.lower & 0X80 >> 7;
+                nn = mem_read(cpu.PC);
+
+                if (Z) cpu.PC += nn;
+
                 cpu.clock += 12;
                 break;
             case(0X29):
@@ -1279,7 +1241,7 @@ void cpu_exec() {
                 /* LD A, [HL+] - 1 byte, 8 cycles *
                     * Load [HL+] to reg A            *
                     * FLAGS: -,-,-,-                 */
-                mem_read(cpu.HL.full + 1, 1, &status_read);
+                mem_read(cpu.HL.full + 1);
                 cpu.clock += 8;
                 break;
             case(0X2B):
@@ -1321,12 +1283,9 @@ void cpu_exec() {
                 /* LD C, d8 - 2 bytes, 8 cycles *
                     * Load byte into C             *
                     * FLAGS: -,-,-,-,              */
-                nn = mem_read(cpu.PC, 1, &status_read);
+                nn = mem_read(cpu.PC);
                 cpu.PC += 1;
-                if (status_read) {
-                    cpu.HL.lower = nn;
-                    status_read = false;
-                }
+                cpu.HL.lower = nn;
                 cpu.clock += 8;
                 break;
             case(0X2F):
@@ -1347,30 +1306,24 @@ void cpu_exec() {
                     * Jump to PC + e8 if not Z      *
                     * FLAGS: -,-,-,-                */
                 Z = cpu.AF.lower & 0X80 >> 7;
-                nn = mem_read(cpu.PC, 1, &status_read);
+                nn = mem_read(cpu.PC);
                 cpu.PC += 1;
-                if (status_read && !Z) {
-                    cpu.PC += nn;
-                    status_read = !status_read;
-                }
+                if (!Z) cpu.PC += nn;
+
                 cpu.clock += 12;
                 break;
             case(0X31):
                 /* LD SP, NN - 3 bytes, 12 cycles  *
                     * Loads 16bit value into register */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if (status_read) {
-                    cpu.SP = nn;
-                    status_read = !status_read;
-                }
+                cpu.SP = mem_read(cpu.PC++) << 8;
+                cpu.SP |= mem_read(cpu.PC++);
                 cpu.clock += 12;
                 break;
             case(0X32):
                 /* LD [HL-], A - 1 byte, 8 cycles *
                     * Load A into [HL-]              *
                     * FLAGS: -,-,-,-                 */
-                mem_write(cpu.AF.upper, cpu.HL.full - 1, 1, &status_write);
+                mem_write(cpu.HL.full - 1, cpu.AF.upper);
                 cpu.clock += 8;
                 break;
             case(0X33):
@@ -1383,8 +1336,8 @@ void cpu_exec() {
                 /* INC [HL] - 1 byte, 4 cycles *
                     * Increment location [HL]     *
                     * FLAGS: Z,0,H,-              */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                mem_write(nn + 1, cpu.HL.full, 1, &status_write);
+                nn = mem_read(cpu.HL.full);
+                mem_write(cpu.HL.full, nn + 1);
 
                 Z = nn + 1 == 0;
                 N = 0;
@@ -1398,8 +1351,8 @@ void cpu_exec() {
                 /* DEC [HL] - bytes 1, cycles 4 *
                     * Decrement location [HL]      *
                     * FLAGS: Z,1,H,-               */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                mem_write(nn - 1, cpu.HL.full, 1, &status_write);
+                nn = mem_read(cpu.HL.full);
+                mem_write(cpu.HL.full, nn - 1);
 
                 Z = nn - 1 == 0;
                 N = 1;
@@ -1413,12 +1366,11 @@ void cpu_exec() {
                 /* LD [HL], n8 - 2 bytes, 20 cycles *
                     * Load to [HL] value in n8         *
                     * FLAGS: -,-,-,-                   */
-                nn = mem_read(cpu.PC, 1, &status_read);
                 cpu.PC += 1;
-                if (status_read) {
-                    mem_write(nn, cpu.HL.full, 1, &status_write);
-                    status_read = !status_read;
-                }
+
+                nn = mem_read(cpu.PC);
+                mem_write(cpu.HL.full, nn);
+
                 cpu.clock += 20;
                 break;
             case(0X37):
@@ -1437,13 +1389,13 @@ void cpu_exec() {
                 /* JR C, e8 - 2bytes, 12 cycles  *
                     * Jump to PC + e8 if C          *
                     * FLAGS: -,-,-,-                */
-                C = cpu.AF.lower & 0X40 >> 4;
-                nn = mem_read(cpu.PC, 1, &status_read);
                 cpu.PC += 1;
-                if (status_read && C) {
-                    cpu.PC += nn;
-                    status_read = !status_read;
-                }
+
+                C = cpu.AF.lower & 0X40 >> 4;
+                nn = mem_read(cpu.PC);
+
+                if (C) cpu.PC += nn;
+
                 cpu.clock += 12;
                 break;
             case(0X39):
@@ -1464,7 +1416,7 @@ void cpu_exec() {
                 /* LD A, [HL+] - 1 byte, 8 cycles *
                     * Load [HL+] to reg A            *
                     * FLAGS: -,-,-,-                 */
-                mem_read(cpu.HL.full - 1, 1, &status_read);
+                mem_read(cpu.HL.full - 1);
                 cpu.clock += 8;
                 break;
             case(0X3B):
@@ -1506,12 +1458,8 @@ void cpu_exec() {
                 /* LD C, d8 - 2 bytes, 8 cycles *
                     * Load byte into C             *
                     * FLAGS: -,-,-,-,              */
-                nn = mem_read(cpu.PC, 1, &status_read);
                 cpu.PC += 1;
-                if (status_read) {
-                    cpu.AF.upper = nn;
-                    status_read = false;
-                }
+                cpu.AF.upper = mem_read(cpu.PC);
                 cpu.clock += 8;
                 break;
             case(0X3F):
@@ -1572,11 +1520,8 @@ void cpu_exec() {
                 /* LD B, [HL] - 1 byte, 8 cycles *
                     * Load [HL] in to B          *
                     * FLAGS: -,-,-,-             */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    cpu.BC.upper = nn;
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.HL.full);
+                cpu.BC.upper = nn;
                 cpu.clock += 8;
                 break;
             case(0X47):
@@ -1632,11 +1577,8 @@ void cpu_exec() {
                 /* LD B, B - 1 byte, 8 cycles *
                     * Load [HL] in to C          *
                     * FLAGS: -,-,-,-             */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    cpu.BC.lower = nn;
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.HL.full);
+                cpu.BC.lower = nn;
                 cpu.clock += 8;
                 break;
             case(0X4F):
@@ -1692,11 +1634,8 @@ void cpu_exec() {
                 /* LD B, B - 1 byte, 8 cycles *
                     * Load [HL] in to D          *
                     * FLAGS: -,-,-,-             */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    cpu.DE.upper = nn;
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.HL.full);
+                cpu.DE.upper = nn;
                 cpu.clock += 8;
                 break;
             case(0X57):
@@ -1752,11 +1691,8 @@ void cpu_exec() {
                 /* LD B, B - 1 byte, 8 cycles *
                     * Load [HL] in to E          *
                     * FLAGS: -,-,-,-             */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    cpu.DE.lower = nn;
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.HL.full);
+                cpu.DE.lower = nn;
                 cpu.clock += 8;
                 break;
             case(0X5F):
@@ -1812,11 +1748,8 @@ void cpu_exec() {
                 /* LD B, B - 1 byte, 8 cycles *
                     * Load [HL] in to H          *
                     * FLAGS: -,-,-,-             */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    cpu.HL.upper = nn;
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.HL.full);
+                cpu.HL.upper = nn;
                 cpu.clock += 8;
                 break;
             case(0X67):
@@ -1872,11 +1805,8 @@ void cpu_exec() {
                 /* LD B, B - 1 byte, 8 cycles *
                     * Load [HL] in to L          *
                     * FLAGS: -,-,-,-             */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    cpu.HL.lower = nn;
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.HL.full);
+                cpu.HL.lower = nn;
                 cpu.clock += 8;
                 break;
             case(0X6F):
@@ -1890,42 +1820,42 @@ void cpu_exec() {
                 /* LD B, B - 1 byte, 4 cycles *
                     * Load B into [HL]           *
                     * FLAGS: -,-,-,-             */
-                mem_write(cpu.BC.upper, cpu.HL.full, 1, &status_write);
+                mem_write(cpu.HL.full, cpu.BC.upper);
                 cpu.clock += 8;
                 break;
             case(0X71):
                 /* LD B, B - 1 byte, 4 cycles *
                     * Load C in to  [HL]         *
                     * FLAGS: -,-,-,-             */
-                mem_write(cpu.BC.lower, cpu.HL.full, 1, &status_write);
+                mem_write(cpu.HL.full, cpu.BC.lower);
                 cpu.clock += 8;
                 break;
             case(0X72):
                 /* LD B, B - 1 byte, 4 cycles *
                     * Load D in to [HL]          *
                     * FLAGS: -,-,-,-             */
-                mem_write(cpu.DE.upper, cpu.HL.full, 1, &status_write);
+                mem_write(cpu.HL.full, cpu.DE.upper);
                 cpu.clock += 8;
                 break;
             case(0X73):
                 /* LD B, B - 1 byte, 4 cycles *
                     * Load E in to [HL]          *
                     * FLAGS: -,-,-,-             */
-                mem_write(cpu.DE.lower, cpu.HL.full, 1, &status_write);
+                mem_write(cpu.HL.full, cpu.DE.lower);
                 cpu.clock += 8;
                 break;
             case(0X74):
                 /* LD B, B - 1 byte, 4 cycles *
                     * Load H in to [HL]          *
                     * FLAGS: -,-,-,-             */
-                mem_write(cpu.HL.upper, cpu.HL.full, 1, &status_write);
+                mem_write(cpu.HL.full, cpu.HL.upper);
                 cpu.clock += 8;
                 break;
             case(0X75):
                 /* LD B, B - 1 byte, 4 cycles *
                     * Load L in to [HL]          *
                     * FLAGS: -,-,-,-             */
-                mem_write(cpu.HL.lower, cpu.HL.full, 1, &status_write);
+                mem_write(cpu.HL.full, cpu.HL.lower);
                 cpu.clock += 8;
                 break;
             case(0X76):
@@ -1938,7 +1868,7 @@ void cpu_exec() {
                 /* LD B, B - 1 byte, 4 cycles *
                     * Load A in to [HL]          *
                     * FLAGS: -,-,-,-             */
-                mem_write(cpu.AF.upper, cpu.HL.full, 1, &status_write);
+                mem_write(cpu.HL.full, cpu.AF.upper);
                 cpu.clock += 4;
                 break;
             case(0X78):
@@ -1987,11 +1917,8 @@ void cpu_exec() {
                 /* LD A, [HL] - 1 byte, 4 cycles *
                     * Load [HL] into A           *
                     * FLAGS: -,-,-,-             */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    cpu.AF.upper = nn;
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.HL.full);
+                cpu.AF.upper = nn;
                 cpu.clock += 8;
                 break;
             case(0X7F):
@@ -2083,16 +2010,14 @@ void cpu_exec() {
                 /* ADD A, [HL] - 1 byte, 8 cycles *
                     * Add [HL] to A                  *
                     * FLAGS: Z,0,H,C                 */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    Z = (cpu.AF.upper + nn == 0);
-                    N = 0;
-                    H = HALF_CARRY(cpu.AF.upper, nn, +);
-                    C = CARRY(cpu.AF.upper, nn, +);
+                nn = mem_read(cpu.HL.full);
+                Z = (cpu.AF.upper + nn == 0);
+                N = 0;
+                H = HALF_CARRY(cpu.AF.upper, nn, +);
+                C = CARRY(cpu.AF.upper, nn, +);
 
-                    cpu.AF.upper += nn;
-                    flag_write(Z, N, H, C, 0b0000);
-                }
+                cpu.AF.upper += nn;
+                flag_write(Z, N, H, C, 0b0000);
                 cpu.clock += 8;
                 break;
             case(0X87):
@@ -2190,16 +2115,14 @@ void cpu_exec() {
                 /* ADC A, [HL] - 1 byte, 4 cycles  *
                     * Add [HL] and carry to A         *
                     * FLAGS: Z,0,H,C               */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    Z = (cpu.AF.upper + nn + FC == 0);
-                    N = 0;
-                    H = HALF_CARRY(cpu.AF.upper, nn + FC, +);
-                    C =      CARRY(cpu.AF.upper, nn + FC, +);
+                nn = mem_read(cpu.HL.full);
+                Z = (cpu.AF.upper + nn + FC == 0);
+                N = 0;
+                H = HALF_CARRY(cpu.AF.upper, nn + FC, +);
+                C =      CARRY(cpu.AF.upper, nn + FC, +);
 
-                    cpu.AF.upper += nn + FC;
-                    flag_write(Z, N, H, C, 0b0000);
-                }
+                cpu.AF.upper += nn + FC;
+                flag_write(Z, N, H, C, 0b0000);
                 cpu.clock += 8;
                 break;
             case(0X8F):
@@ -2297,16 +2220,14 @@ void cpu_exec() {
                 /* SUB A, [HL] - 1 byte, 4 cycles *
                     * Sub [HL] to A                  *
                     * FLAGS: Z,0,H,C                 */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    Z = (cpu.AF.upper - nn == 0);
-                    N = 1;
-                    H = HALF_CARRY(cpu.AF.upper, nn, -);
-                    C = CARRY(cpu.AF.upper, nn, -);
+                nn = mem_read(cpu.HL.full);
+                Z = (cpu.AF.upper - nn == 0);
+                N = 1;
+                H = HALF_CARRY(cpu.AF.upper, nn, -);
+                C = CARRY(cpu.AF.upper, nn, -);
 
-                    cpu.AF.upper -= nn;
-                    flag_write(Z, N, H, C, 0b0000);
-                }
+                cpu.AF.upper -= nn;
+                flag_write(Z, N, H, C, 0b0000);
                 cpu.clock += 8;
                 break;
             case(0X97):
@@ -2404,16 +2325,14 @@ void cpu_exec() {
                 /* SBC A, [HL] - 1 byte, 4 cycles  *
                     * Sub [HL] and carry to A         *
                     * FLAGS: Z,0,H,C               */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    Z = (cpu.AF.upper - nn - FC == 0);
-                    N = 0;
-                    H = HALF_CARRY(cpu.AF.upper, nn - FC, -);
-                    C =      CARRY(cpu.AF.upper, nn - FC, -);
+                nn = mem_read(cpu.HL.full);
+                Z = (cpu.AF.upper - nn - FC == 0);
+                N = 0;
+                H = HALF_CARRY(cpu.AF.upper, nn - FC, -);
+                C =      CARRY(cpu.AF.upper, nn - FC, -);
 
-                    cpu.AF.upper -= nn + FC;
-                    flag_write(Z, N, H, C, 0b0000);
-                }
+                cpu.AF.upper -= nn + FC;
+                flag_write(Z, N, H, C, 0b0000);
                 cpu.clock += 8;
                 break;
             case(0X9F):
@@ -2511,16 +2430,14 @@ void cpu_exec() {
                 /* AND A, [HL] - 1 byte, 4 cycles *
                     * And A with [HL]                *
                     * FLAGS: Z,0,1,0                 */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    Z = ((cpu.AF.upper & nn) == 0);
-                    N = 0;
-                    H = 1;
-                    C = 0;
+                nn = mem_read(cpu.HL.full);
+                Z = ((cpu.AF.upper & nn) == 0);
+                N = 0;
+                H = 1;
+                C = 0;
 
-                    cpu.AF.upper &= nn;
-                    flag_write(Z, N, H, C, 0b0000);
-                }
+                cpu.AF.upper &= nn;
+                flag_write(Z, N, H, C, 0b0000);
                 cpu.clock += 8;
                 break;
             case(0XA7):
@@ -2618,16 +2535,14 @@ void cpu_exec() {
                 /* XOR A, [HL] - 1 byte, 4 cycles *
                     * XOR A with [HL]                *
                     * FLAGS: Z,0,1,0                 */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    Z = ((cpu.AF.upper ^ nn) == 0);
-                    N = 0;
-                    H = 0;
-                    C = 0;
+                nn = mem_read(cpu.HL.full);
+                Z = ((cpu.AF.upper ^ nn) == 0);
+                N = 0;
+                H = 0;
+                C = 0;
 
-                    cpu.AF.upper ^= nn;
-                    flag_write(Z, N, H, C, 0b0000);
-                }
+                cpu.AF.upper ^= nn;
+                flag_write(Z, N, H, C, 0b0000);
                 cpu.clock += 8;
                 break;
             case(0XAF):
@@ -2725,16 +2640,14 @@ void cpu_exec() {
                 /* OR A, [HL] - 1 byte, 4 cycles *
                     * Or A with [HL]                *
                     * FLAGS: Z,0,1,0                 */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    Z = ((cpu.AF.upper | nn) == 0);
-                    N = 0;
-                    H = 0;
-                    C = 0;
+                nn = mem_read(cpu.HL.full);
+                Z = ((cpu.AF.upper | nn) == 0);
+                N = 0;
+                H = 0;
+                C = 0;
 
-                    cpu.AF.upper |= nn;
-                    flag_write(Z, N, H, C, 0b0000);
-                }
+                cpu.AF.upper |= nn;
+                flag_write(Z, N, H, C, 0b0000);
                 cpu.clock += 8;
                 break;
             case(0XB7):
@@ -2826,15 +2739,13 @@ void cpu_exec() {
                 /* CP [HL] - 1 byte, 8 cycles *
                     * Compare [HL] to A                  *
                     * FLAGS: Z,1,H,C                 */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    Z = (cpu.AF.upper - nn == 0);
-                    N = 0;
-                    H = HALF_CARRY(cpu.AF.upper, nn, -);
-                    C = CARRY(cpu.AF.upper, nn, -);
+                nn = mem_read(cpu.HL.full);
+                Z = (cpu.AF.upper - nn == 0);
+                N = 0;
+                H = HALF_CARRY(cpu.AF.upper, nn, -);
+                C = CARRY(cpu.AF.upper, nn, -);
 
-                    flag_write(Z, N, H, C, 0b0000);
-                }
+                flag_write(Z, N, H, C, 0b0000);
                 cpu.clock += 8;
                 break;
             case(0XBF):
@@ -2853,9 +2764,10 @@ void cpu_exec() {
                 /* RET NZ - 1 byte, 16 cycles  *
                     * if not Z Return from subroutine   *
                     * FLAGS: -,-,-,-           */
-                if (!((cpu.AF.lower & 0X80) == 0X80)) {
-                    cpu.PC  = 0;
-                    cpu.PC  = mem_read(cpu.SP+=2, 2, &status_read);
+
+                if (!FZ) {
+                    cpu.PC = mem_read(cpu.SP++) << 8;
+                    cpu.PC |= mem_read(cpu.SP++);
                     cpu.clock += 12;
                 }
                 cpu.clock += 8;
@@ -2864,19 +2776,19 @@ void cpu_exec() {
                 /* POP BC - 1 byte, 12 cycles *
                     * Pop from stack into BC     *
                     * FLAGS: -,-,-,-             */
-                cpu.BC.full = mem_read(cpu.SP, 2, &status_read);
-                cpu.SP += 2;
+                cpu.BC.full = mem_read(cpu.SP++) << 8;
+                cpu.BC.full |= mem_read(cpu.SP++);
                 cpu.clock += 12;
                 break;
             case(0XC2):
                 /* JP NZ, a16 - 3 bytes, 16 cycles *
                     * if not Z Set PC to a16 (JMP)         *
                     * FLAGS: -,-,-,-              */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if (status_read && !((cpu.AF.lower & 0X80) == 0X80)) {
+                nn = mem_read(cpu.PC++) << 8;
+                nn |= mem_read(cpu.PC++);
+
+                if (!FZ) {
                     cpu.PC = nn;
-                    status_read = !status_read;
                     cpu.clock += 4;
                 }
                 cpu.clock += 12;
@@ -2885,23 +2797,22 @@ void cpu_exec() {
                 /* JP a16 - 3 bytes, 16 cycles *
                     * Set PC to a16 (JMP)         *
                     * FLAGS: -,-,-,-              */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if (status_read) {
-                    cpu.PC = nn;
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.PC++) << 8;
+                nn |= mem_read(cpu.PC++);
+
+                cpu.PC = nn;
                 cpu.clock += 16;
                 break;
             case(0XC4):
                 /* CALL NZ, a16 - 3 bytes, 24/12 cycles       *
                     * if not Z (Store PC at [SP], Set PC to a16) *
                     * FLAGS: -,-,-,-                             */
-                nn = mem_read(cpu.PC, 2, &status_read);
+                nn = mem_read(cpu.PC++) << 8;
+                nn |= mem_read(cpu.PC++);
                 cpu.PC += 2;
-                if (status_read && !((cpu.AF.lower & 0X80) == 0X80)) {
-                    cpu.SP -= 2;
-                    mem_write(cpu.PC, cpu.SP, 2, &status_write);
+                if (!FZ) {
+                    mem_write(--cpu.SP, cpu.PC);
+                    mem_write(--cpu.SP, cpu.PC >> 8);
 
                     cpu.PC = nn;
                     cpu.clock += 12;
@@ -2912,34 +2823,33 @@ void cpu_exec() {
                 /* PUSH BC - 1 byte, 16 cycles *
                     * Push reg BC to stack        *
                     * FLAGS: -,-,-,-              */
-                mem_write(cpu.BC.full, cpu.SP, 2, &status_write);
+                mem_write(--cpu.SP, cpu.BC.lower);
+                mem_write(--cpu.SP, cpu.BC.upper);
                 cpu.clock += 16;
                 break;
             case(0XC6):
                 /* ADD A, d8 - 2 byte, 8 cycles *
                     * Add d8 to A                  *
                     * FLAGS: Z,0,H,C               */
-                nn = mem_read(cpu.PC, 1, &status_read);
                 cpu.PC += 1;
-                if (status_read) {
-                    Z = (cpu.AF.upper + nn == 0);
-                    N = 0;
-                    H = HALF_CARRY(cpu.AF.upper, nn, +);
-                    C = CARRY(cpu.AF.upper, nn, +);
 
-                    cpu.AF.upper += nn;
-                    flag_write(Z, N, H, C, 0b0000);
+                nn = mem_read(cpu.PC);
+                Z = (cpu.AF.upper + nn == 0);
+                N = 0;
+                H = HALF_CARRY(cpu.AF.upper, nn, +);
+                C = CARRY(cpu.AF.upper, nn, +);
 
-                    status_read = !status_read;
-                }
+                cpu.AF.upper += nn;
+                flag_write(Z, N, H, C, 0b0000);
+
                 cpu.clock += 8;
                 break;
             case(0XC7):
                 /* RST 38H - 1 byte, 16 cycles *
                     * call abs addr at opcode     *
                     * FLAGS: -,-,-,-              */
-                cpu.SP -= 2;
-                mem_write(cpu.PC, cpu.SP, 2, &status_write);
+                mem_write(--cpu.SP, cpu.PC);
+                mem_write(--cpu.SP, cpu.PC >> 8);
 
                 cpu.PC = cpu.CIR & 0XFF;
                 cpu.clock += 16;
@@ -2948,9 +2858,9 @@ void cpu_exec() {
                 /* RET Z - 1 byte, 16 cycles  *
                     * if  Z Return from subroutine   *
                     * FLAGS: -,-,-,-           */
-                if ((cpu.AF.lower & 0X80) == 0X80) {
-                    cpu.PC = mem_read(cpu.SP, 2, &status_read);
-                    cpu.SP += 2;
+                if (FZ) {
+                    cpu.PC = mem_read(cpu.SP++) << 8;
+                    cpu.PC |= mem_read(cpu.SP++);
                     cpu.clock += 12;
                 }
                 cpu.clock += 8;
@@ -2959,19 +2869,18 @@ void cpu_exec() {
                 /* RET - 1 byte, 16 cycles  *
                     * Return from subroutine   *
                     * FLAGS: -,-,-,-           */
-                cpu.PC = mem_read(cpu.SP, 2, &status_read);
-                cpu.SP += 2;
+                cpu.PC = mem_read(cpu.SP++) << 8;
+                cpu.PC |= mem_read(cpu.SP++);
                 cpu.clock += 16;
                 break;
             case(0XCA):
                 /* JP Z, a16 - 3 bytes, 16 cycles *
                     * if Z Set PC to a16 (JMP)         *
                     * FLAGS: -,-,-,-              */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if (status_read && ((cpu.AF.lower & 0X80) == 0X80)) {
+                nn = mem_read(cpu.PC++) << 8;
+                nn |= mem_read(cpu.PC++);
+                if (FZ) {
                     cpu.PC = nn;
-                    status_read = !status_read;
                     cpu.clock += 4;
                 }
                 cpu.clock += 12;
@@ -2985,11 +2894,11 @@ void cpu_exec() {
                 /* CALL Z, a16 - 3 bytes, 24/12 cycles    *
                     * if Z (Store PC at [SP], Set PC to a16) *
                     * FLAGS: -,-,-,-                         */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if (status_read && ((cpu.AF.lower & 0X80) == 0X80)) {
-                    cpu.SP -= 2;
-                    mem_write(cpu.PC, cpu.SP, 2, &status_write);
+                nn = mem_read(cpu.PC++) << 8;
+                nn |= mem_read(cpu.PC++);
+                if (FZ) {
+                    mem_write(--cpu.SP, cpu.PC);
+                    mem_write(--cpu.SP, cpu.PC >> 8);
 
                     cpu.PC = nn;
                     cpu.clock += 12;
@@ -3000,39 +2909,35 @@ void cpu_exec() {
                 /* CALL a16 - 3 bytes, 24 cycles *
                     * Store PC at [SP], Set PC to a16  *
                     * FLAGS: -,-,-,-                   */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if (status_read) {
-                    cpu.SP -= 2;
-                    mem_write(cpu.PC, cpu.SP, 2, &status_write);
+                nn = mem_read(cpu.PC++) << 8;
+                nn |= mem_read(cpu.PC++);
 
-                    cpu.PC = nn;
-                }
+                mem_write(--cpu.SP, cpu.PC);
+                mem_write(--cpu.SP, cpu.PC >> 8);
+
+                cpu.PC = nn;
                 cpu.clock += 24;
                 break;
             case(0XCE):
                 /* ADC A, d8 - 1 byte, 8 cycles  *
                     * Add d8 and carry to A         *
                     * FLAGS: Z,0,H,C                */
-                nn = mem_read(cpu.PC, 1, &status_read);
-                cpu.PC += 1;
-                if (status_read) {
-                    Z = (cpu.AF.upper + nn == 0);
-                    N = 0;
-                    H = HALF_CARRY(cpu.AF.upper, nn + ((cpu.AF.lower & 0X10) == 0X10), +);
-                    C = CARRY(cpu.AF.upper, nn + ((cpu.AF.lower & 0X10) == 0X10), +);
+                nn = mem_read(cpu.PC++);
+                Z = (cpu.AF.upper + nn == 0);
+                N = 0;
+                H = HALF_CARRY(cpu.AF.upper, nn + ((cpu.AF.lower & 0X10) == 0X10), +);
+                C = CARRY(cpu.AF.upper, nn + ((cpu.AF.lower & 0X10) == 0X10), +);
 
-                    cpu.AF.upper += nn + ((cpu.AF.lower & 0X10) == 0X10);
-                    flag_write(Z, N, H, C, 0b0000);
-                }
+                cpu.AF.upper += nn + ((cpu.AF.lower & 0X10) == 0X10);
+                flag_write(Z, N, H, C, 0b0000);
                 cpu.clock += 8;
                 break;
             case(0XCF):
                 /* RST 08H - 1 byte, 16 cycles *
                     * call abs addr at opcode     *
                     * FLAGS: -,-,-,-              */
-                cpu.SP -= 2;
-                mem_write(cpu.PC, cpu.SP, 2, &status_write);
+                mem_write(--cpu.SP, cpu.PC);
+                mem_write(--cpu.SP, cpu.PC >> 8);
 
                 cpu.PC = cpu.CIR & 0XFF;
                 cpu.clock += 16;
@@ -3041,9 +2946,9 @@ void cpu_exec() {
                 /* RET NC - 1 byte, 16 cycles  *
                     * if not C Return from subroutine   *
                     * FLAGS: -,-,-,-           */
-                if (!((cpu.AF.lower & 0X10) == 0X10)) {
-                    cpu.PC = mem_read(cpu.SP, 2, &status_read);
-                    cpu.SP += 2;
+                if (!FC) {
+                    mem_write(--cpu.SP, cpu.PC);
+                    mem_write(--cpu.SP, cpu.PC >> 8);
                     cpu.clock += 12;
                 }
                 cpu.clock += 8;
@@ -3052,21 +2957,23 @@ void cpu_exec() {
                 /* POP DE - 1 byte, 12 cycles *
                     * Pop from stack into DE     *
                     * FLAGS: -,-,-,-             */
-                cpu.DE.full = mem_read(cpu.SP, 2, &status_read);
-                cpu.SP += 2;
+                cpu.DE.upper = mem_read(cpu.SP++);
+                cpu.DE.lower = mem_read(cpu.SP++);
+
                 cpu.clock += 12;
                 break;
             case(0XD2):
                 /* JP NC, a16 - 3 bytes, 16 cycles *
                     * if not C Set PC to a16 (JMP)         *
                     * FLAGS: -,-,-,-              */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if (status_read && !((cpu.AF.lower & 0X10) == 0X10)) {
+                nn = mem_read(cpu.PC++) << 8;
+                nn |= mem_read(cpu.PC++);
+
+                if (!FC) {
                     cpu.PC = nn;
-                    status_read = !status_read;
                     cpu.clock += 4;
                 }
+
                 cpu.clock += 12;
                 break;
             case(0XD3): break;
@@ -3074,11 +2981,11 @@ void cpu_exec() {
                 /* CALL NC, a16 - 3 bytes, 24/12 cycles       *
                     * if not C (Store PC at [SP], Set PC to a16) *
                     * FLAGS: -,-,-,-                             */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if (status_read && !((cpu.AF.lower & 0X10) == 0X10)) {
-                    cpu.SP -= 2;
-                    mem_write(cpu.PC, cpu.SP, 2, &status_write);
+                nn = mem_read(cpu.PC++) << 8;
+                nn |= mem_read(cpu.PC++);
+                if (!FC) {
+                    mem_write(--cpu.SP, cpu.PC);
+                    mem_write(--cpu.SP, cpu.PC >> 8);
 
                     cpu.PC = nn;
                     cpu.clock += 12;
@@ -3089,35 +2996,31 @@ void cpu_exec() {
                 /* PUSH DE - 1 byte, 16 cycles *
                     * Push reg DE to stack        *
                     * FLAGS: -,-,-,-              */
-                cpu.SP -= 2;
-                mem_write(cpu.DE.full, cpu.SP, 2, &status_write);
+                mem_write(--cpu.SP, cpu.DE.lower);
+                mem_write(--cpu.SP, cpu.DE.upper);
                 cpu.clock += 16;
                 break;
             case(0XD6):
                 /* SUB A, d8 - 2 byte, 8 cycles *
                     * Sub d8 to A                  *
                     * FLAGS: Z,0,H,C               */
-                nn = mem_read(cpu.PC, 1, &status_read);
-                cpu.PC += 1;
-                if (status_read) {
-                    Z = (cpu.AF.upper - nn == 0);
-                    N = 0;
-                    H = HALF_CARRY(cpu.AF.upper, nn, -);
-                    C = CARRY(cpu.AF.upper, nn, -);
+                nn = mem_read(cpu.PC++);
+                Z = (cpu.AF.upper - nn == 0);
+                N = 0;
+                H = HALF_CARRY(cpu.AF.upper, nn, -);
+                C = CARRY(cpu.AF.upper, nn, -);
 
-                    cpu.AF.upper -= nn;
-                    flag_write(Z, N, H, C, 0b0000);
+                cpu.AF.upper -= nn;
+                flag_write(Z, N, H, C, 0b0000);
 
-                    status_read = !status_read;
-                }
                 cpu.clock += 8;
                 break;
             case(0XD7):
                 /* RST 38H - 1 byte, 16 cycles *
                     * call abs addr at opcode     *
                     * FLAGS: -,-,-,-              */
-                cpu.SP -= 2;
-                mem_write(cpu.PC, cpu.SP, 2, &status_write);
+                mem_write(--cpu.SP, cpu.PC);
+                mem_write(--cpu.SP, cpu.PC >> 8);
 
                 cpu.PC = cpu.CIR & 0XFF;
                 cpu.clock += 16;
@@ -3126,16 +3029,17 @@ void cpu_exec() {
                 /* RET C - 1 byte, 16 cycles  *
                     * if  C Return from subroutine   *
                     * FLAGS: -,-,-,-           */
-                if ((cpu.AF.lower & 0X10) == 0X10) {
-                    cpu.PC = mem_read(cpu.SP, 2, &status_read);
-                    cpu.SP += 2;
+                if (FC) {
+                    cpu.PC = mem_read(cpu.SP++) << 8;
+                    cpu.PC |= mem_read(cpu.SP++);
                 }
+                break;
             case(0XD9):
                 /* RETI - 1 byte, 16 cycles   *
                     * Return and enable interupt *
                     * FLAGS: -,-,-,-             */
-                cpu.PC = mem_read(cpu.SP, 2, &status_read);
-                cpu.SP += 2;
+                cpu.PC = mem_read(cpu.SP++) << 8;
+                cpu.PC |= mem_read(cpu.SP++);
                 cpu.IME = true;
                 cpu.clock += 16;
                 break;
@@ -3143,11 +3047,10 @@ void cpu_exec() {
                 /* JP C, a16 - 3 bytes, 16 cycles *
                     * if C Set PC to a16 (JMP)         *
                     * FLAGS: -,-,-,-              */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if (status_read && ((cpu.AF.lower & 0X10) == 0X10)) {
+                nn = mem_read(cpu.PC++) << 8;
+                nn |= mem_read(cpu.PC++);
+                if (FC) {
                     cpu.PC = nn;
-                    status_read = !status_read;
                     cpu.clock += 4;
                 }
                 cpu.clock += 12;
@@ -3157,11 +3060,11 @@ void cpu_exec() {
                 /* CALL C, a16 - 3 bytes, 24/12 cycles    *
                     * if C (Store PC at [SP], Set PC to a16) *
                     * FLAGS: -,-,-,-                         */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if (status_read && ((cpu.AF.lower & 0X10) == 0X10)) {
-                    cpu.SP -= 2;
-                    mem_write(cpu.PC, cpu.SP, 2, &status_write);
+                nn = mem_read(cpu.PC++) << 8;
+                nn |= mem_read(cpu.PC++);
+                if (FC) {
+                    mem_write(--cpu.SP, cpu.PC);
+                    mem_write(--cpu.SP, cpu.PC >> 8);
 
                     cpu.PC = nn;
                     cpu.clock += 12;
@@ -3173,25 +3076,22 @@ void cpu_exec() {
                 /* SBC A, d8 - 1 byte, 4 cycles  *
                     * Sub d8 and carry to A         *
                     * FLAGS: Z,0,H,C                */
-                nn = mem_read(cpu.PC, 1, &status_read);
-                cpu.PC += 1;
-                if (status_read) {
-                    Z = (cpu.AF.upper - nn == 0);
-                    N = 0;
-                    H = HALF_CARRY(cpu.AF.upper, nn - ((cpu.AF.lower & 0X10) == 0X10), -);
-                    C = CARRY(cpu.AF.upper, nn - ((cpu.AF.lower & 0X10) == 0X10), -);
+                nn = mem_read(cpu.PC++);
+                Z = (cpu.AF.upper - nn == 0);
+                N = 0;
+                H = HALF_CARRY(cpu.AF.upper, nn - ((cpu.AF.lower & 0X10) == 0X10), -);
+                C = CARRY(cpu.AF.upper, nn - ((cpu.AF.lower & 0X10) == 0X10), -);
 
-                    cpu.AF.upper -= nn - ((cpu.AF.lower & 0X10) == 0X10);
-                    flag_write(Z, N, H, C, 0b0000);
-                }
+                cpu.AF.upper -= nn - ((cpu.AF.lower & 0X10) == 0X10);
+                flag_write(Z, N, H, C, 0b0000);
                 cpu.clock += 8;
                 break;
             case(0XDF):
                 /* RST 18H - 1 byte, 16 cycles *
                     * call abs addr at opcode     *
                     * FLAGS: -,-,-,-              */
-                cpu.SP -= 2;
-                mem_write(cpu.PC, cpu.SP, 2, &status_write);
+                mem_write(--cpu.SP, cpu.PC);
+                mem_write(--cpu.SP, cpu.PC >> 8);
 
                 cpu.PC = cpu.CIR & 0XFF;
                 cpu.clock += 16;
@@ -3200,27 +3100,26 @@ void cpu_exec() {
                 /* LDH [a8], A - 2 bytes, 12 cycles *
                     * Write to I/O-port a8             *
                     * FLAGS: -,-,-,-                   */
-                nn = mem_read(cpu.PC, 1, &status_read);
                 cpu.PC += 1;
-                if (status_read) {
-                    mem_write(cpu.AF.upper, 0XFF00 + nn, 1, &status_write);
-                    status_read = !status_read;
-                }
+
+                nn = mem_read(cpu.PC);
+                mem_write(0XFF00 + nn, cpu.AF.upper);
+
                 cpu.clock += 12;
                 break;
             case(0XE1):
                 /* POP HL - 1 byte, 12 cycles *
                     * Pop from stack into HL     *
                     * FLAGS: -,-,-,-             */
-                cpu.HL.full = mem_read(cpu.SP, 2, &status_read);
-                cpu.SP += 2;
+                cpu.HL.upper = mem_read(cpu.SP++);
+                cpu.HL.lower = mem_read(cpu.SP++);
                 cpu.clock += 12;
                 break;
             case(0XE2):
                 /* LD A, C - 2 bytes, 12 cycles *
                     * Read from to I/O-port C2      *
                     * FLAGS: -,-,-,-                */
-                mem_write(cpu.AF.lower, 0XFF00 + cpu.BC.lower, 1, &status_write);
+                mem_write(0XFF00 + cpu.BC.lower, cpu.AF.lower);
                 cpu.clock += 8;
                 break;
             case(0XE3): break;
@@ -3229,35 +3128,33 @@ void cpu_exec() {
                 /* PUSH HL - 1 byte, 16 cycles *
                     * Push reg HL to stack        *
                     * FLAGS: -,-,-,-              */
-                cpu.SP -= 2;
-                mem_write(cpu.HL.full, cpu.SP, 2, &status_write);
+                cpu.HL.upper = mem_read(--cpu.SP);
+                cpu.HL.lower = mem_read(--cpu.SP);
                 cpu.clock += 16;
                 break;
             case(0XE6):
                 /* AND A, d8 - 2 byte, 8 cycles *
                     * And A with d8                *
                     * FLAGS: Z,0,1,0               */
-                nn = mem_read(cpu.PC, 1, &status_read);
                 cpu.PC += 1;
-                if (status_read) {
-                    Z = ((cpu.AF.upper & cpu.BC.upper) == 0);
-                    N = 0;
-                    H = 1;
-                    C = 0;
 
-                    cpu.AF.upper &= cpu.BC.upper;
-                    flag_write(Z, N, H, C, 0b0000);
+                nn = mem_read(cpu.PC);
+                Z = ((cpu.AF.upper & cpu.BC.upper) == 0);
+                N = 0;
+                H = 1;
+                C = 0;
 
-                    status_read = !status_read;
-                }
+                cpu.AF.upper &= cpu.BC.upper;
+                flag_write(Z, N, H, C, 0b0000);
+
                 cpu.clock += 8;
                 break;
             case(0XE7):
                 /* RST 38H - 1 byte, 16 cycles *
                     * call abs addr at opcode     *
                     * FLAGS: -,-,-,-              */
-                cpu.SP -= 2;
-                mem_write(cpu.PC, cpu.SP, 2, &status_write);
+                mem_write(--cpu.SP, cpu.PC);
+                mem_write(--cpu.SP, cpu.PC >> 8);
 
                 cpu.PC = cpu.CIR & 0XFF;
                 cpu.clock += 16;
@@ -3266,41 +3163,35 @@ void cpu_exec() {
                 /* ADD SP, r8 - 2 bytes, 16 cycles *
                     * Add 8 bit signed to SP          *
                     * FLAGS: -,0,H,C                  */
-                nn = mem_read(cpu.PC, 1, &status_read);
                 cpu.PC += 1;
-                if (status_read) {
-                    Z = 0;
-                    N = 0;
-                    H = HALF_CARRY(cpu.SP, (int8_t) nn, +);
-                    C = CARRY(cpu.SP, (int8_t) nn, +);
 
-                    cpu.SP += (int8_t) nn;
-                    flag_write(Z, N, H, C, 0b1000);
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.PC);
+                Z = 0;
+                N = 0;
+                H = HALF_CARRY(cpu.SP, (int8_t) nn, +);
+                C = CARRY(cpu.SP, (int8_t) nn, +);
+
+                cpu.SP += (int8_t) nn;
+                flag_write(Z, N, H, C, 0b1000);
                 cpu.clock += 16;
                 break;
             case(0XE9):
                 /* JP [HL] - 3 bytes, 16 cycles *
                     * Set PC to [HL] (JMP)         *
                     * FLAGS: -,-,-,-               */
-                nn = mem_read(cpu.HL.full, 1, &status_read);
-                if (status_read) {
-                    cpu.PC = nn;
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.HL.full);
+                cpu.PC = nn;
                 cpu.clock += 4;
                 break;
             case(0XEA):
                 /* LD [a16], A - 3 bytes, 16 cycles *
                     * Load A into [a16]                *
                     * FLAGS -,-,-,-                    */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 2;
-                if(status_read) {
-                    mem_write(cpu.AF.upper, nn, 1, &status_write);
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.PC++) << 8;
+                nn |= mem_read(cpu.PC++);
+
+                mem_write(nn, cpu.AF.upper);
+
                 cpu.clock += 16;
                 break;
             case(0XEB): break;
@@ -3310,27 +3201,25 @@ void cpu_exec() {
                 /* XOR A, d8 - 2 byte, 8 cycles  *
                     * XOR A with d8                 *
                     * FLAGS: Z,0,1,0                */
-                nn = mem_read(cpu.PC, 1, &status_read);
                 cpu.PC += 1;
-                if (status_read) {
-                    Z = ((cpu.AF.upper ^ cpu.BC.upper) == 0);
-                    N = 0;
-                    H = 0;
-                    C = 0;
 
-                    cpu.AF.upper ^= cpu.BC.upper;
-                    flag_write(Z, N, H, C, 0b0000);
+                nn = mem_read(cpu.PC);
+                Z = ((cpu.AF.upper ^ cpu.BC.upper) == 0);
+                N = 0;
+                H = 0;
+                C = 0;
 
-                    status_read = !status_read;
-                }
+                cpu.AF.upper ^= cpu.BC.upper;
+                flag_write(Z, N, H, C, 0b0000);
+
                 cpu.clock += 8;
                 break;
             case(0XEF):
                 /* RST 28H - 1 byte, 16 cycles *
                     * call abs addr at opcode     *
                     * FLAGS: -,-,-,-              */
-                cpu.SP -= 2;
-                mem_write(cpu.PC, cpu.SP, 2, &status_write);
+                mem_write(--cpu.SP, cpu.PC);
+                mem_write(--cpu.SP, cpu.PC >> 8);
 
                 cpu.PC = cpu.CIR & 0XFF;
                 cpu.clock += 16;
@@ -3339,28 +3228,26 @@ void cpu_exec() {
                 /* LDH A, [a8] - 2 bytes, 12 cycles *
                     * Read from to I/O-port a8         *
                     * FLAGS: -,-,-,-                   */
-                nn = mem_read(cpu.PC, 1, &status_read);
                 cpu.PC += 1;
-                if (status_read) {
-                    cpu.AF.upper = mem_read(0XFF00 + nn, 1, &status_read);
-                    status_read = !status_read;
-                }
+
+                nn = mem_read(cpu.PC);
+                cpu.AF.upper = mem_read(0XFF00 + nn);
+
                 cpu.clock += 12;
                 break;
             case(0XF1):
                 /* POP AF - 1 byte, 12 cycles *
                     * Pop from stack into AF     *
                     * FLAGS: -,-,-,-             */
-                cpu.AF.full = mem_read(cpu.SP, 2, &status_read);
-                cpu.SP += 2;
+                cpu.AF.full = mem_read(cpu.SP++) << 8;
+                cpu.AF.full |= mem_read(cpu.SP++);
                 cpu.clock += 12;
                 break;
             case(0XF2):
                 /* LDH A, C - 2 bytes, 12 cycles *
-                    * Read from to I/O-port C2      *
-                    * FLAGS: -,-,-,-                */
-                mem_write(cpu.AF.upper, 0XFF00 + cpu.BC.lower, 1, &status_write);
-                status_read = !status_read;
+                * Read from to I/O-port C2      *
+                * FLAGS: -,-,-,-                */
+                cpu.AF.upper = mem_read(0XFF00 + cpu.BC.lower);
                 cpu.clock += 8;
                 break;
             case(0XF3):
@@ -3375,35 +3262,33 @@ void cpu_exec() {
                 /* PUSH AF - 1 byte, 16 cycles *
                     * Push reg AF to stack        *
                     * FLAGS: -,-,-,-              */
-                cpu.SP -= 2;
-                mem_write(cpu.AF.full, cpu.SP, 2, &status_write);
+                cpu.AF.full = mem_read(--cpu.SP) << 8;
+                cpu.AF.full |= mem_read(--cpu.SP);
                 cpu.clock += 16;
                 break;
             case(0XF6):
                 /* OR A, d8 - 2 byte, 8 cycles  *
                     * OR A with d8                 *
                     * FLAGS: Z,0,1,0               */
-                nn = mem_read(cpu.PC, 1, &status_read);
                 cpu.PC += 1;
-                if (status_read) {
-                    Z = ((cpu.AF.upper | cpu.BC.upper) == 0);
-                    N = 0;
-                    H = 0;
-                    C = 0;
 
-                    cpu.AF.upper |= cpu.BC.upper;
-                    flag_write(Z, N, H, C, 0b0000);
+                nn = mem_read(cpu.PC);
+                Z = ((cpu.AF.upper | cpu.BC.upper) == 0);
+                N = 0;
+                H = 0;
+                C = 0;
 
-                    status_read = !status_read;
-                }
+                cpu.AF.upper |= cpu.BC.upper;
+                flag_write(Z, N, H, C, 0b0000);
+
                 cpu.clock += 8;
                 break;
             case(0XF7):
                 /* RST 38H - 1 byte, 16 cycles *
                     * call abs addr at opcode     *
                     * FLAGS: -,-,-,-              */
-                cpu.SP -= 2;
-                mem_write(cpu.PC, cpu.SP, 2, &status_write);
+                mem_write(--cpu.SP, cpu.PC);
+                mem_write(--cpu.SP, cpu.PC >> 8);
 
                 cpu.PC = cpu.CIR & 0XFF;
                 cpu.clock += 16;
@@ -3412,18 +3297,17 @@ void cpu_exec() {
                 /* LD HL, SP + r8 - 2 bytes, 16 cycles *
                     * load 8 bit signed + SP to HL        *
                     * FLAGS: 0,0,H,C                      */
-                nn = mem_read(cpu.PC, 1, &status_read);
                 cpu.PC += 1;
-                if (status_read) {
-                    Z = 0;
-                    N = 0;
-                    H = HALF_CARRY(cpu.SP, (int8_t) nn, +);
-                    C = CARRY(cpu.SP, (int8_t) nn, +);
 
-                    cpu.HL.full = cpu.SP + (int8_t) nn;
-                    flag_write(Z, N, H, C, 0b0000);
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.PC);
+                Z = 0;
+                N = 0;
+                H = HALF_CARRY(cpu.SP, (int8_t) nn, +);
+                C = CARRY(cpu.SP, (int8_t) nn, +);
+
+                cpu.HL.full = cpu.SP + (int8_t) nn;
+                flag_write(Z, N, H, C, 0b0000);
+
                 cpu.clock += 12;
                 break;
             case(0XF9):
@@ -3437,12 +3321,11 @@ void cpu_exec() {
                 /* LD A, [a16] - 3 bytes, 16 cycles *
                     * Load [a16] into A                *
                     * FLAGS -,-,-,-                    */
-                nn = mem_read(cpu.PC, 2, &status_read);
-                cpu.PC += 1;
-                if(status_read) {
-                    cpu.AF.upper = mem_read(nn, 1, &status_read);
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.PC++) << 8;
+                nn |= mem_read(cpu.PC++);
+
+                cpu.AF.upper = mem_read(nn);
+
                 cpu.clock += 16;
                 break;
             case(0XFB):
@@ -3458,25 +3341,24 @@ void cpu_exec() {
                 /* CP d8 - 2 byte, 8 cycles *
                     * Compare A to d8          *
                     * FLAGS: Z,1,H,C           */
-                nn = mem_read(cpu.PC, 1, &status_read);
                 cpu.PC += 1;
-                if (status_read) {
-                    Z = (cpu.AF.upper - cpu.AF.upper == 0);
-                    N = 0;
-                    H = HALF_CARRY(cpu.AF.upper, cpu.AF.upper, -);
-                    C = CARRY(cpu.AF.upper, cpu.AF.upper, -);
 
-                    flag_write(Z, N, H, C, 0b0000);
-                    status_read = !status_read;
-                }
+                nn = mem_read(cpu.PC);
+                Z = (cpu.AF.upper - cpu.AF.upper == 0);
+                N = 0;
+                H = HALF_CARRY(cpu.AF.upper, cpu.AF.upper, -);
+                C = CARRY(cpu.AF.upper, cpu.AF.upper, -);
+
+                flag_write(Z, N, H, C, 0b0000);
+
                 cpu.clock += 8;
                 break;
             case(0XFF):
                 /* RST 38H - 1 byte, 16 cycles *
                     * call abs addr at opcode     *
                     * FLAGS: -,-,-,-              */
-                cpu.SP -= 2;
-                mem_write(cpu.PC, cpu.SP, 2, &status_write);
+                mem_write(--cpu.SP, cpu.PC);
+                mem_write(--cpu.SP, cpu.PC >> 8);
 
                 cpu.PC = cpu.CIR & 0XFF;
                 cpu.clock += 16;

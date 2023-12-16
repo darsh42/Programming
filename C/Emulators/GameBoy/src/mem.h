@@ -2,6 +2,10 @@
 #define MEM_H_INCLUDED
 
 #include "common.h"
+#include "cartridge.h"
+
+#define ROM_BANK_SIZE 0X8000
+#define RAM_BANK_SIZE 0X2000
 
 struct mem {
 
@@ -38,10 +42,19 @@ struct mem {
     ** |--------------| <- 0X00FF Boot ROM
     **  --------------  <- 0X0000
     */
+    struct cartridge_header cartridge_header;
+
     uint8_t main[0X10000];
 
     /* Memory Banks */
-    uint8_t banks[0X8000];
+    bool ROM_bank_mode;
+    int ROM_bank_number;
+    uint8_t *ROMbanks;
+
+    /* RAM Banks */
+    bool RAM_enabled;
+    int RAM_bank_number;
+    uint8_t *RAMbanks;
 };
 
 

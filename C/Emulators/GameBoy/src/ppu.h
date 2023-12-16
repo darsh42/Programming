@@ -6,7 +6,6 @@
 #define   SIGNED_ADDR(tile_num)  ((int8_t) tile_num * 16 + 0X8800)
 #define UNSIGNED_ADDR(tile_num) ((uint8_t) tile_num * 16 + 0X8000)
 #define ADDR(tile_num, mode) (mode) ? SIGNED_ADDR(tile_num): UNSIGNED_ADDR(tile_num)
-#define GET_BIT(a, b) ((a & (1 << b)) == (1 << b))
 #define TILEMAP(a) (a) ? 0X9C00: 0X9800
 
 struct ppu {
@@ -59,7 +58,6 @@ struct ppu {
 
     // misc
     uint16_t background_mem;
-    bool status_read;
 
     int m_scanline_counter;
 };
@@ -69,7 +67,7 @@ void interrupt_request(uint8_t request);
 
 /* Memory functions */
 extern uint8_t *mem_pointer(uint16_t addr);
-extern uint16_t mem_read(uint16_t addr, int size, bool *status);
-extern void mem_write(uint16_t val, uint16_t addr, int size, bool *status);
+extern uint8_t mem_read(uint16_t addr);
+extern void mem_write(uint16_t addr, uint8_t data);
 
 #endif // PPU_H_INCLUDED
