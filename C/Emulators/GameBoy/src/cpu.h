@@ -9,9 +9,16 @@
 #define FH ((cpu.AF.lower & 0X20) == 0X20)
 #define FC ((cpu.AF.lower & 0X10) == 0X10)
 
+#define FLAG_SET_Z(Z) cpu.AF.lower |= (Z << 7);
+#define FLAG_SET_N(N) cpu.AF.lower |= (N << 6);
+#define FLAG_SET_H(H) cpu.AF.lower |= (H << 5);
+#define FLAG_SET_C(C) cpu.AF.lower |= (C << 4);
+
+
 // Calculate Half or Full Carry
 #define     HALF_CARRY(a, b, sign) (((a & 0X0f) sign (b & 0X0f)) & 0X010) == 0X010
 #define          CARRY(a, b, sign) (((a & 0Xff) sign (b & 0Xff)) & 0X100) == 0X100
+
 
 /* Register definition */
 typedef union {

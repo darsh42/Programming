@@ -96,6 +96,7 @@ int debugger_update() {
     // TODO:
     // Memory Registers
     mvprintw(2, 2, "TITLE: %s", debugger.mem->cartridge_header.Title);
+    debugger_seek_mem(base_addr);
 
     // Timer Registers
 
@@ -103,11 +104,16 @@ int debugger_update() {
     debugger_flag_print(*debugger.handler->IF, 25, "INTER REQ:");
     debugger_flag_print(*debugger.handler->IE, 26, "INTER ENA:");
 
+    if (mem_read(0XFF02) == 0X81) {
+        mvprintw(1, 60, "%c", mem_read(0XFF01));
+        mem_write(0XFF02, 0X00);
+    }
+
     refresh();
 
     // Input Handle
     char c;
-    mvprintw(yMax - 2, 2, " SPC - cont, m - mem seek, q - quit");
+    mvprintw(yMax - 2, 2, " SPC - cont, m - mem seek, j - jump to, q - quit");
     while ((c = getch()) != ' ') {
         switch (c) {
             // seek memory location
@@ -118,8 +124,18 @@ int debugger_update() {
 
                 // implement error checking
                 base_addr = debugger_get_addr();
+                debugger_seek_mem(base_addr);
                 break;
             }
+            case('j'):
+                move(yMax-2, 2);
+                clrtoeol();
+                mvprintw(yMax - 2, 2, "Specify a jump addr (e.g ffff)");
+
+                // implement error checking
+                uint16_t jmp_addr = debugger_get_addr();
+                debugger.cpu->PC = jmp_addr;
+                break;
             // quit Debugger and GameBoy
             case('q'): return 1; break;
         }
@@ -130,7 +146,7 @@ int debugger_update() {
         mvprintw(yMax - 2, 72, "0X%04x", base_addr);
     }
 
-    debugger_seek_mem(base_addr);
+
     refresh();
 
     return 0;

@@ -46,4 +46,9 @@
 #define mTMA 0XFF06
 #define mTAC 0XFF07
 
+// interrupt locations
+#define mIF 0XFF0F
+#define mIE 0XFFFF
+
+
 #endif // COMMON_H_INCLUDED
