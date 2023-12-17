@@ -16,8 +16,8 @@
 /* Register definition */
 typedef union {
     struct {
-        uint16_t upper: 8;
         uint16_t lower: 8;
+        uint16_t upper: 8;
     };
     uint16_t full;
 } reg_u;

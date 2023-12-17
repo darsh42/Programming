@@ -48,17 +48,19 @@ void debugger_kill() {
     endwin();
 }
 
-void debugger_flag_print(uint8_t flag, int yStart) {
-    mvprintw(yStart, 2, "FLAGS:");
-    mvprintw(yStart, 6+2, "%d", (flag & 0X80)== 0X80);
-    mvprintw(yStart, 6+3, "%d", (flag & 0X40)== 0X40);
-    mvprintw(yStart, 6+4, "%d", (flag & 0X20)== 0X20);
-    mvprintw(yStart, 6+5, "%d", (flag & 0X10)== 0X10);
-    mvprintw(yStart, 6+6, "%d", (flag & 0X08)== 0X08);
-    mvprintw(yStart, 6+7, "%d", (flag & 0X04)== 0X04);
-    mvprintw(yStart, 6+8, "%d", (flag & 0X02)== 0X02);
-    mvprintw(yStart, 6+9, "%d", (flag & 0X01)== 0X01);
-    return;
+void debugger_flag_print(uint8_t flag, int yStart, char *field) {
+    int len;
+    for (len = 0; field[len] != '\0'; len++);
+
+    mvprintw(yStart, 2, "%s", field);
+    mvprintw(yStart, len+2, "%d", (flag & 0X80)== 0X80);
+    mvprintw(yStart, len+3, "%d", (flag & 0X40)== 0X40);
+    mvprintw(yStart, len+4, "%d", (flag & 0X20)== 0X20);
+    mvprintw(yStart, len+5, "%d", (flag & 0X10)== 0X10);
+    mvprintw(yStart, len+6, "%d", (flag & 0X08)== 0X08);
+    mvprintw(yStart, len+7, "%d", (flag & 0X04)== 0X04);
+    mvprintw(yStart, len+8, "%d", (flag & 0X02)== 0X02);
+    mvprintw(yStart, len+9, "%d", (flag & 0X01)== 0X01);
 }
 
 int debugger_update() {
@@ -73,13 +75,13 @@ int debugger_update() {
     mvprintw(5, 2,"PC: 0X%04x", debugger.cpu->PC);
     mvprintw(6, 2,"CIR: 0X%02x", debugger.cpu->CIR);
     mvprintw(7, 2,"SP: 0X%04x", debugger.cpu->SP);
-    mvprintw(8, 2,"AF: 0X%04x 0X%04x", debugger.cpu->AF.upper, debugger.cpu->AF.lower);
-    mvprintw(9, 2,"BC: 0X%04x 0X%04x", debugger.cpu->BC.upper, debugger.cpu->BC.lower);
-    mvprintw(10, 2, "DE: 0X%04x 0X%04x", debugger.cpu->DE.upper, debugger.cpu->DE.lower);
-    mvprintw(11, 2, "HL: 0X%04x 0X%04x", debugger.cpu->HL.upper, debugger.cpu->HL.lower);
+    mvprintw(8, 2,"AF: 0X%02x 0X%02x", debugger.cpu->AF.upper, debugger.cpu->AF.lower);
+    mvprintw(9, 2,"BC: 0X%02x 0X%02x", debugger.cpu->BC.upper, debugger.cpu->BC.lower);
+    mvprintw(10, 2, "DE: 0X%02x 0X%02x", debugger.cpu->DE.upper, debugger.cpu->DE.lower);
+    mvprintw(11, 2, "HL: 0X%02x 0X%02x", debugger.cpu->HL.upper, debugger.cpu->HL.lower);
     mvprintw(12, 2, "IME: 0X%04x", debugger.cpu->IME);
 
-    debugger_flag_print(debugger.cpu->AF.lower, 14);
+    debugger_flag_print(debugger.cpu->AF.lower, 14, "FLAGS:");
 
     // PPU Register
     mvprintw(17, 2, "PPU Registers");
@@ -98,7 +100,8 @@ int debugger_update() {
     // Timer Registers
 
     // Interrupt Requests
-
+    debugger_flag_print(*debugger.handler->IF, 25, "INTER REQ:");
+    debugger_flag_print(*debugger.handler->IE, 26, "INTER ENA:");
 
     refresh();
 
@@ -113,6 +116,7 @@ int debugger_update() {
                 clrtoeol();
                 mvprintw(yMax - 2, 2, "Specify a memory addr (e.g ffff)");
 
+                // implement error checking
                 base_addr = debugger_get_addr();
                 break;
             }
@@ -126,7 +130,7 @@ int debugger_update() {
         mvprintw(yMax - 2, 72, "0X%04x", base_addr);
     }
 
-    // debugger_seek_mem(base_addr);
+    debugger_seek_mem(base_addr);
     refresh();
 
     return 0;

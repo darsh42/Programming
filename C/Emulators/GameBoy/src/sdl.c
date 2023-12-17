@@ -1,5 +1,9 @@
 #include "sdl.h"
 
+// BUG: Fix cannot render display properly
+
+static const int screen_dims = 160*144*3;
+
 static SDL_Window *win;
 static SDL_Renderer *rend;
 static SDL_Texture *screen;
@@ -40,33 +44,31 @@ int sdl_kill() {
     return 0;
 }
 
-/*
-void update_texture() {
-    uint8_t display[160][144][3] = ppu_get_display();
 
+void update_texture() {
     if (SDL_LockTexture(screen, NULL, (void *) pixels, &pitch) != 0) {
         fprintf(stderr, "[Error] sdl.c: Unable to lock screen texture, %s\n", SDL_GetError());
         return;
     }
 
-    memcpy(pixels, display, sizeof(pixels));
+    memcpy(pixels, ppu_get_display(), screen_dims * sizeof(uint8_t));
 
     SDL_UnlockTexture(screen);
 
     return;
 }
 
-void Render(struct GameBoy *GameBoy) {
+void Render() {
     SDL_SetRenderDrawColor(rend, 0XFF, 0XFF, 0XFF, 0XFF);
     SDL_RenderClear(rend);
 
-    update_texture(GameBoy);
+    update_texture();
     SDL_RenderPresent(rend);
 }
-*/
 
+/*
 void RenderScreen() {
-    uint8_t ***display = ppu_get_display();
+    //uint8_t ***display = ppu_get_display();
     SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 
     // clear the current rendering target with the drawing color
@@ -77,14 +79,13 @@ void RenderScreen() {
     SDL_Rect rect;
     for (int y = 0; y < 144; y++) {
         for (int x = 0; x < 160; x++) {
+            SDL_SetRenderDrawColor(rend,
+                                    ppu_ref->display[x][y][0],
+                                    ppu_ref->display[x][y][1],
+                                    ppu_ref->display[x][y][2],
+                                    255);
 
-                SDL_SetRenderDrawColor(rend,
-                                       display[x][y][0],
-                                       display[x][y][1],
-                                       display[x][y][2],
-                                       255);
-
-                SDL_RenderDrawPoint(rend, x, y);
+            SDL_RenderDrawPoint(rend, x, y);
         }
     }
 
@@ -93,3 +94,4 @@ void RenderScreen() {
     SDL_RenderPresent(rend);
     return;
 }
+*/

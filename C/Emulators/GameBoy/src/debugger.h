@@ -11,6 +11,9 @@
 
 #include <ncurses.h>
 
+#define strlen(s, len) for (*len = 0; s[*len] != '\0'; *len++)
+
+
 extern struct cpu *get_cpu();
 extern struct ppu *get_ppu();
 extern struct mem *get_mem();

@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
     while (emulate) {
         while ((oldtime = cpu_clocks()) < MAXCYCLES) {
             cpu_exec();
-            ppu_exec();
+            ppu_exec(oldtime, cpu_clocks());
             update_timers(oldtime, cpu_clocks());
             handle_interrupts();
             if (debugger_update() != 0) {
@@ -37,6 +37,7 @@ int main(int argc, char **argv) {
                 break;
             }
         }
+        Render();
         cpu_clock_reset();
     }
 

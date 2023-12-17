@@ -1,22 +1,27 @@
 #include "ppu.h"
+#include "common.h"
 
 struct ppu ppu;
 
-struct ppu *get_ppu() {return &ppu;}
+struct ppu *get_ppu() {
+    return &ppu;
+}
 
 // BUG: cannot get display for rendering
-uint8_t ***ppu_get_display() {return (uint8_t ***) ppu.display;}
+void *ppu_get_display() {
+    return (void *)ppu.display;
+}
 
 /* gets palette colours for pixels */
-int get_colour(uint8_t colour_num) {
-    uint8_t palette = mem_read(0XFF47);
+int get_colour(uint8_t colour_num, uint16_t addr) {
+    uint8_t palette = mem_read(addr);
     int hi, lo;
 
     switch(colour_num) {
         case 0: hi = 1; lo = 0; break;
         case 1: hi = 3; lo = 2; break;
         case 2: hi = 5; lo = 4; break;
-        case 3: hi = 7; lo = 0; break;
+        case 3: hi = 7; lo = 6; break;
     }
 
     return (TEST_BIT(palette, hi) << 1) | (TEST_BIT(palette, lo));
@@ -113,7 +118,7 @@ void ppu_render_background() {
         int blue = 0;
         int green = 0;
 
-        switch(get_colour(colournum)) {
+        switch(get_colour(colournum, 0XFF47)) {
             case 0: red = 0XFF; blue = 0XFF; green = 0XFF; break; // WHITE
             case 1: red = 0XCC; blue = 0XCC; green = 0XCC; break; // LIGHT GREY
             case 2: red = 0X77; blue = 0X77; green = 0X77; break; // DARK GREY
@@ -132,7 +137,76 @@ void ppu_render_background() {
 
 /* renders sprites to scanline */
 void ppu_render_sprites() {
+    // if no sprite display is enabled
+    if (TEST_BIT(*ppu.LCDC, 1)) {
+        return;
+    }
 
+    for (int sprite_num = 0; sprite_num < 40; sprite_num++) {
+        uint8_t y_pos = mem_read(0XFE00 + OAM_ENTRY_SIZE_BYTES * sprite_num + 0) - 16;
+        uint8_t x_pos = mem_read(0XFE00 + OAM_ENTRY_SIZE_BYTES * sprite_num + 1) - 8;
+        uint8_t tile_location = mem_read(0XFE00 + OAM_ENTRY_SIZE_BYTES * sprite_num + 2);
+        uint8_t attributes = mem_read(0XFE00 + OAM_ENTRY_SIZE_BYTES * sprite_num + 3);
+
+        // gets size of sprite 8x16 or 8x8
+        uint8_t y_size = TEST_BIT(*ppu.LCDC, 2) ? 16: 8;
+
+        // if current scanline contains sprite
+        if (*ppu.LY >= y_pos && *ppu.LY <= (y_pos + y_size)) {
+            uint8_t line_in_sprite = *ppu.LY - y_pos;
+
+            // Y-flip
+            if (TEST_BIT(attributes, 6)) {
+                // take away total size to count from bottom
+                line_in_sprite -= y_size;
+                // make index
+                line_in_sprite *= -1;
+            }
+
+            // Each pixel in sprite is 2 bit val, therefor 16 byte sprite
+            line_in_sprite *= 2;
+            uint8_t tile_data_hi = mem_read(0X8000 + (tile_location * 16) + line_in_sprite);
+            uint8_t tile_data_lo = mem_read(0X8000 + (tile_location * 16) + line_in_sprite + 1);
+
+            // placing each pixel
+            for (int tile_pixel = 7; tile_pixel >= 0; tile_pixel--) {
+                int colourbit = tile_pixel;
+                // X-flip
+                if (TEST_BIT(attributes, 5)) {
+                    // take away total size to count from left
+                    colourbit -= 7;
+                    // make index
+                    colourbit *= -1;
+                }
+
+                // TODO: Understand this bit
+                int colournum = (TEST_BIT(tile_data_hi, colourbit)) | (TEST_BIT(tile_data_lo, colourbit));
+
+
+                int red = 0;
+                int blue = 0;
+                int green = 0;
+
+                switch(get_colour(colournum, TEST_BIT(attributes, 4) ? 0XFF49: 0XFF48)) {
+                    case 0: red = 0XFF; blue = 0XFF; green = 0XFF; break; // WHITE
+                    case 1: red = 0XCC; blue = 0XCC; green = 0XCC; break; // LIGHT GREY
+                    case 2: red = 0X77; blue = 0X77; green = 0X77; break; // DARK GREY
+                }
+
+                int pixel = x_pos - tile_pixel + 7;
+
+                int final_y = mem_read(0XFF44);
+
+                if ((final_y < 0 || final_y > 143) || (pixel < 0 || pixel > 159))
+                    continue;
+
+                ppu.display[pixel][final_y][0] = red;
+                ppu.display[pixel][final_y][1] = green;
+                ppu.display[pixel][final_y][2] = blue;
+
+            }
+        }
+    }
 }
 
 void LCD_status() {
@@ -214,9 +288,16 @@ void ppu_exec(int oldtime, int currenttime) {
     (*ppu.LY)++;
     ppu.m_scanline_counter = 456;
 
-    if (*ppu.LY < 144)
+    if (*ppu.LY < 144) {
         // render scanline
-        ppu_render_background();
+        if (TEST_BIT(*ppu.LCDC, 0)) {
+            ppu_render_background();
+        }
+
+        if (TEST_BIT(*ppu.LCDC, 1)) {
+            ppu_render_sprites();
+        }
+    }
 
     else if (*ppu.LY == 144)
         // VBlank interrupt

@@ -37,6 +37,9 @@
 #define mLY 0XFF44
 #define mLYC 0XFF45
 
+// DMA transfer location
+#define mDMA 0XFF46
+
 // timer locations
 #define mDIV 0XFF04
 #define mTIMA 0XFF05

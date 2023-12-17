@@ -1,10 +1,13 @@
 TODO:
+- Fix CPU
+  - potential issue with flag write routine
+  - verify each opcode using Tetris ROM
 - Fix Display renderer
-- Create LCD Status routine
-- Create ppu_render_sprites routine
-- implement all Interrupt service routines
 
 DONE:
+- Create ppu_render_sprites routine
+- Create LCD Status routine
+- implement all Interrupt service routines
 - Check and Verify memory management routines and ROM/RAM bank switching
 - Create proper start up sequence, set all correct register values and memory locations
 - Create Cartridge header and load ROM correctly

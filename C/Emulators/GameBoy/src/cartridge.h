@@ -10,7 +10,7 @@ struct cartridge_header {
     ** Entry Point
     */
     uint8_t entry[3];
-    uint8_t nintendo_logo[49];
+    uint8_t nintendo_logo[48];
     uint8_t Title[16];
 
     /*

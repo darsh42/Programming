@@ -20,14 +20,14 @@ extern void init_handler();
 
 // Device Execution functions
 extern void cpu_exec();
-extern void ppu_exec();
+extern void ppu_exec(int oldtime, int currenttime);
 extern void apu_exec();
 extern void update_timers(int oldtime, int currenttime);
 extern void handle_interrupts();
 
 // Rendering Functions
 extern int sdl_kill();
-extern void RenderScreen();
+extern void Render();
 
 // Debugger
 extern void debugger_init();

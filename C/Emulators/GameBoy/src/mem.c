@@ -10,6 +10,10 @@ struct mem *get_mem() {return &mem;}
 void mem_init() {
     // Set default ROM bank
     mem.ROM_bank_number = 0X01;
+    mem.RAM_bank_number = 0x00;
+
+    mem.ROM_bank_mode = false;
+    mem.RAM_enabled = false;
 
     /* Setting High RAM */
     mem.main[0XFF00] = 0XCF; mem.main[0XFF01] = 0X00;
@@ -83,7 +87,8 @@ int mem_cartridge_load(char **filename) {
     // create memory banks
     if (mem.cartridge_header.ROM_size != 0X00) {
         // (Banksize << (value + 1)) - base banks
-        if ((mem.ROMbanks = malloc((ROM_BANK_SIZE << (mem.cartridge_header.ROM_size + 1)) - 2)) == NULL) {
+        int banksize = ROM_BANK_SIZE * (1 << mem.cartridge_header.ROM_size);
+        if ((mem.ROMbanks = malloc(banksize * sizeof(uint8_t))) == NULL) {
             fprintf(stderr, "[Error] mem.c: Could malloc ROMbanks\n");
             fclose(rom);
             return 1;
@@ -237,6 +242,16 @@ void mem_write(uint16_t addr, uint8_t data) {
         mem.main[addr - 0X2000] = data;
     } else if (addr >= 0XFF00 && addr <= 0XFF7F) {
         // I/O Registers
+        if (addr == mDMA) {
+            // byte specifies start addr of DMA as 0XBB00 where BB is byte
+            uint16_t DMA_transfer_addr = data << 8;
+
+            // write from 0XBB00 - 0XBB9F to OAM (0XFE00 - 0XFE9F)
+            for (int i = 0; i < 0XA0; i++)
+                mem_write(0XFE00 + i, mem_read(DMA_transfer_addr + i));
+
+            return;
+        }
 
         if (addr == mDIV) data = 0;
         if (addr == mLY) data = 0;

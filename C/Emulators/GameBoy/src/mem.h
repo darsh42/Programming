@@ -48,12 +48,12 @@ struct mem {
 
     /* Memory Banks */
     bool ROM_bank_mode;
-    int ROM_bank_number;
+    uint8_t ROM_bank_number;
     uint8_t *ROMbanks;
 
     /* RAM Banks */
     bool RAM_enabled;
-    int RAM_bank_number;
+    uint8_t RAM_bank_number;
     uint8_t *RAMbanks;
 };
 
