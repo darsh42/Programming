@@ -3,8 +3,6 @@
 
 #include "common.h"
 
-#define mIF 0XFF0F
-#define mIE 0XFFFF
 
 struct interrupt_handler {
 

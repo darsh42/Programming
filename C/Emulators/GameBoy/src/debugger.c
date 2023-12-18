@@ -104,10 +104,6 @@ int debugger_update() {
     debugger_flag_print(*debugger.handler->IF, 25, "INTER REQ:");
     debugger_flag_print(*debugger.handler->IE, 26, "INTER ENA:");
 
-    if (mem_read(0XFF02) == 0X81) {
-        mvprintw(1, 60, "%c", mem_read(0XFF01));
-        mem_write(0XFF02, 0X00);
-    }
 
     refresh();
 
