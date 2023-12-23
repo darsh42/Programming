@@ -1,8 +1,12 @@
 #include "debugger.h"
-
+#include <ctype.h>
+#include <curses.h>
 
 struct debugger debugger;
 static int base_addr = 0;
+static int continue_for = 0;
+static int breakpoint = -1;
+static FILE *log;
 
 int STR_TO_HEX(char *str) {
     int res = 0;
@@ -13,6 +17,26 @@ int STR_TO_HEX(char *str) {
     }
 
     return res >> 4;
+}
+
+void debugger_log_state() {
+    uint16_t SP, PC;
+    uint8_t A, F, B, C, D, E, H, L;
+
+    A = debugger.cpu->AF.upper;
+    B = debugger.cpu->BC.upper;
+    D = debugger.cpu->DE.upper;
+    H = debugger.cpu->HL.upper;
+
+    F = debugger.cpu->AF.lower;
+    C = debugger.cpu->BC.lower;
+    E = debugger.cpu->DE.lower;
+    L = debugger.cpu->HL.lower;
+
+    PC = debugger.cpu->PC;
+    SP = debugger.cpu->SP;
+
+    fprintf(log, "A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X SP: %04X PC: 00:%04X\n", A, F, B, C, D, E, H, L, SP, PC);
 }
 
 int debugger_get_addr() {
@@ -40,11 +64,13 @@ void debugger_init() {
     debugger.mem = get_mem();
     debugger.timers = get_timers();
     debugger.handler = get_handler();
+    log = fopen("GAMEBOY.log", "w");
 
     initscr(); noecho(); curs_set(0);
 }
 
 void debugger_kill() {
+    fclose(log);
     endwin();
 }
 
@@ -63,10 +89,62 @@ void debugger_flag_print(uint8_t flag, int yStart, char *field) {
     mvprintw(yStart, len+9, "%d", (flag & 0X01)== 0X01);
 }
 
+int debugger_get_input(int yMax) {
+    // Input Handle
+    char c;
+    mvprintw(yMax - 2, 2, " SPC - cont, m - mem seek (0Xffff), b - breakpoint (0Xffff), c - continue for (e.g 10), q - quit");
+    while ((c = getch()) != ' ') {
+        switch (c) {
+            // seek memory location
+            case('m'): {
+                move(yMax-2, 2);
+                clrtoeol();
+                mvprintw(yMax - 2, 2, "Specify a memory addr (e.g ffff)");
+
+                // implement error checking
+                base_addr = debugger_get_addr();
+                debugger_seek_mem(base_addr);
+                break;
+            }
+            case('b'):
+                // jump to instruction
+                move(yMax-2, 2);
+                clrtoeol();
+                mvprintw(yMax - 2, 2, "Specify a breakpoint (e.g ffff)");
+
+                // implement error checking
+                breakpoint = debugger_get_addr();
+                break;
+            // quit Debugger and GameBoy
+            case('c'):
+                // coninue for n instructions
+                move(yMax-2, 2);
+                clrtoeol();
+                mvprintw(yMax - 2, 2, "Specify instruction count (e.g 10)");
+
+                // implement error checking
+                uint16_t n_ins = debugger_get_addr();
+                continue_for = n_ins;
+                break;
+            case('q'): return 1; break;
+        }
+
+        move(yMax-2, 2);
+        clrtoeol();
+        mvprintw(yMax - 2, 2, " SPC - cont, m - mem seek, q - quit");
+        mvprintw(yMax - 2, 72, "0X%04x", base_addr);
+
+        refresh();
+    }
+
+
+
+    return 0;
+}
+
 int debugger_update() {
 
-    int xMax, yMax;
-    getmaxyx(stdscr, yMax, xMax);
+    int yMax = getmaxy(stdscr);
 
     // DEBUGGER.CPU Registers
     mvprintw(3, 2,"CPU Registers");
@@ -85,8 +163,8 @@ int debugger_update() {
 
     // PPU Register
     mvprintw(17, 2, "PPU Registers");
-    mvprintw(18, 2, "LCDC: 0X%04x", *debugger.ppu->LCDC);
-    mvprintw(19, 2, "LCDS: 0X%04x", *debugger.ppu->LCDS);
+    debugger_flag_print(*debugger.ppu->LCDC, 18, "LCDC: ");
+    debugger_flag_print(*debugger.ppu->LCDS, 19, "LCDS: ");
 
     mvprintw(20, 2, "LY: 0X%04x", *debugger.ppu->LY);
     mvprintw(21, 2, "LYC: 0X%04x", *debugger.ppu->LYC);
@@ -104,46 +182,32 @@ int debugger_update() {
     debugger_flag_print(*debugger.handler->IF, 25, "INTER REQ:");
     debugger_flag_print(*debugger.handler->IE, 26, "INTER ENA:");
 
+    int debug_status = 0;
 
-    refresh();
-
-    // Input Handle
-    char c;
-    mvprintw(yMax - 2, 2, " SPC - cont, m - mem seek, j - jump to, q - quit");
-    while ((c = getch()) != ' ') {
-        switch (c) {
-            // seek memory location
-            case('m'): {
-                move(yMax-2, 2);
-                clrtoeol();
-                mvprintw(yMax - 2, 2, "Specify a memory addr (e.g ffff)");
-
-                // implement error checking
-                base_addr = debugger_get_addr();
-                debugger_seek_mem(base_addr);
-                break;
-            }
-            case('j'):
-                move(yMax-2, 2);
-                clrtoeol();
-                mvprintw(yMax - 2, 2, "Specify a jump addr (e.g ffff)");
-
-                // implement error checking
-                uint16_t jmp_addr = debugger_get_addr();
-                debugger.cpu->PC = jmp_addr;
-                break;
-            // quit Debugger and GameBoy
-            case('q'): return 1; break;
+    if (breakpoint != -1) {
+        if (debugger.cpu->PC == breakpoint) {
+            breakpoint = -1;
+            debug_status = debugger_get_input(yMax);
         }
-
-        move(yMax-2, 2);
-        clrtoeol();
-        mvprintw(yMax - 2, 2, " SPC - cont, m - mem seek, q - quit");
-        mvprintw(yMax - 2, 72, "0X%04x", base_addr);
+    } else if (continue_for > 0) {
+        continue_for--;
+    } else {
+        debug_status = debugger_get_input(yMax);
     }
 
+    if (debug_status != 0) return 1;
 
     refresh();
+
+    debugger_log_state();
+    // if (mem_read(0XFF02) == 0X81) {
+    //     char c = mem_read(0XFF01);
+    //     if (isalnum(c) && prevFF01 != c) {
+    //         fprintf(log, "%c", mem_read(0XFF01));
+    //         mem_write(0XFF02, 0);
+    //         prevFF01 = mem_read(0XFF01);
+    //     }
+    // }
 
     return 0;
 }

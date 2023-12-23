@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (mem_cartridge_load(argv+=1) != 0) return 1;
+    if (mem_load_boot(argv+=1) != 0) return 1;
 
     gameboy_init();
 
@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
     while (emulate) {
         while ((oldtime = cpu_clocks()) < MAXCYCLES) {
             cpu_exec();
-            ppu_exec(oldtime, cpu_clocks());
+            ppu_exec();
             update_timers(oldtime, cpu_clocks());
             handle_interrupts();
             if (debugger_update() != 0) {
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
                 break;
             }
         }
-        Render();
+        sdl_render();
         cpu_clock_reset();
     }
 

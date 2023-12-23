@@ -3,7 +3,10 @@
 
 #include <SDL2/SDL.h>
 #include "common.h"
+#include "ppu.h"
 
-extern void *ppu_get_display();
+extern uint32_t *get_display();
+
+extern struct ppu *get_ppu();
 
 #endif // SDL_H_INCLUDED

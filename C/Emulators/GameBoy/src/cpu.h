@@ -9,10 +9,10 @@
 #define FH ((cpu.AF.lower & 0X20) == 0X20)
 #define FC ((cpu.AF.lower & 0X10) == 0X10)
 
-#define FLAG_SET_Z(Z) cpu.AF.lower |= (Z << 7);
-#define FLAG_SET_N(N) cpu.AF.lower |= (N << 6);
-#define FLAG_SET_H(H) cpu.AF.lower |= (H << 5);
-#define FLAG_SET_C(C) cpu.AF.lower |= (C << 4);
+#define FLAG_SET_Z(Z) cpu.AF.lower = (cpu.AF.lower & 0b01111111) | ((Z) << 7);
+#define FLAG_SET_N(N) cpu.AF.lower = (cpu.AF.lower & 0b10111111) | ((N) << 6);
+#define FLAG_SET_H(H) cpu.AF.lower = (cpu.AF.lower & 0b11011111) | ((H) << 5);
+#define FLAG_SET_C(C) cpu.AF.lower = (cpu.AF.lower & 0b11101111) | ((C) << 4);
 
 #define PUSH_TO_STACK16BIT(val) mem_write(--cpu.SP, val >> 8); mem_write(--cpu.SP, val)
 #define PUSH_TO_STACK(val) mem_write(--cpu.SP, val)
@@ -25,13 +25,12 @@
 #define          CARRY16BIT(a, b, sign) (((a & 0Xffff) sign (b & 0Xffff)) & 0X10000) == 0X10000
 #define     HALF_CARRY(a, b, sign) (((a & 0X0f) sign (b & 0X0f)) & 0X010) == 0X010
 #define          CARRY(a, b, sign) (((a & 0Xff) sign (b & 0Xff)) & 0X100) == 0X100
-#define     MINHALF_CARRY16BIT(a, b) (((a & 0X0fff) - (b & 0X0fff)) & 0X1000) == ((a & 0X0fff) & 0X1000)
-#define          MINCARRY16BIT(a, b) (((a & 0Xffff) - (b & 0Xffff)) & 0X10000) == ((a & 0Xffff) & 0X10000)
-#define     MINHALF_CARRY(a, b) (((a & 0X0f) - (b & 0X0f)) & 0X010) != ((a & 0X0f) & 0X010)
-#define          MINCARRY(a, b) (((a & 0Xff) - (b & 0Xff)) & 0X100) == ((a & 0Xff) & 0x0100)
+#define     MINHALF_CARRY16BIT(a, b) (((a & 0X0fff) - (b & 0X0fff)) < 0)
+#define          MINCARRY16BIT(a, b) (((a & 0Xffff) - (b & 0Xffff)) < 0)
+#define     MINHALF_CARRY(a, b) (((a & 0X0f) - (b & 0X0f)) < 0)
+#define          MINCARRY(a, b) (((a & 0Xff) - (b & 0Xff)) < 0)
 
-#define GET_16_BIT() mem_read(cpu.PC++) | (mem_read(cpu.PC++) << 8)
-#define UPPER_LOWER(reg, upper) (upper) ? reg->upper: reg->lower
+#define UPPER_LOWER(reg, upper) ((upper) ? reg->upper: reg->lower)
 
 /* Register definition */
 typedef union {
@@ -82,5 +81,6 @@ struct cpu {
 /* Memory functions */
 extern uint8_t mem_read(uint16_t addr);
 extern void mem_write(uint16_t addr, uint8_t data);
+uint8_t mem_checksum();
 
 #endif // CPU_H_INCLUDED

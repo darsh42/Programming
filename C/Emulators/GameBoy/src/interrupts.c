@@ -16,47 +16,37 @@ void interrupt_request(uint8_t request) {
     *handler.IF |= request;
 }
 
+void service_interrupt(int interrupt) {
+    *handler.IF = RESET_BIT(*handler.IF, interrupt);
+
+    switch(interrupt) {
+        // VBlank service call
+        case(0): cpu_ISR_start(0X40); break;
+        // LCD service call
+        case(1): cpu_ISR_start(0X48); break;
+        // Timer service call
+        case(2): cpu_ISR_start(0X50); break;
+        // Serial service call
+        case(3): cpu_ISR_start(0X58); break;
+        // Joypad service call
+        case(4): cpu_ISR_start(0X60); break;
+    }
+}
+
 void handle_interrupts() {
     // If no master interrupt
     if (!cpu_IME()) return;
 
     // if no interrupt requested
-    if (!(*handler.IF)) return;
+    if (*handler.IF == 0) return;
 
     // if no interrupt is enabled
-    if (!(*handler.IE)) return;
+    if (*handler.IE == 0) return;
 
-    uint8_t service = *handler.IE & *handler.IF;
-
-    // VBlank service call
-    if (TEST_BIT(service, 0)) {
-       cpu_ISR_start(0X40);
-       cpu_ISR_return();
+    for (int i = 0; i < 5; i++) {
+        if (TEST_BIT(*handler.IF, i) && TEST_BIT(*handler.IE, i)) {
+            service_interrupt(i);
+        }
     }
-
-    // LCD service call
-    if (TEST_BIT(service, 1)) {
-       cpu_ISR_start(0X48);
-       cpu_ISR_return();
-    }
-
-    // Timer service call
-    if (TEST_BIT(service, 2)) {
-       cpu_ISR_start(0X50);
-       cpu_ISR_return();
-    }
-
-    // Serial service call
-    if (TEST_BIT(service, 3)) {
-       cpu_ISR_start(0X58);
-       cpu_ISR_return();
-    }
-
-    // Joypad service call
-    if (TEST_BIT(service, 4)) {
-       cpu_ISR_start(0X60);
-       cpu_ISR_return();
-    }
-
     return;
 }

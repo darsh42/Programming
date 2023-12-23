@@ -15,11 +15,14 @@ void mem_init() {
     mem.ROM_bank_mode = false;
     mem.RAM_enabled = false;
 
+    mem.hasROMbanks = false;
+    mem.hasRAMbanks = false;
+
     /* Setting High RAM */
     mem.main[0XFF00] = 0XCF; mem.main[0XFF01] = 0X00;
     mem.main[0XFF02] = 0X7E; mem.main[0XFF04] = 0X00;
     mem.main[0XFF06] = 0X00; mem.main[0XFF07] = 0XF8;
-    mem.main[0XFF0F] = 0XE1; mem.main[0XFF10] = 0X80;
+    mem.main[0XFF0F] = 0XFF; mem.main[0XFF10] = 0X80;
     mem.main[0XFF11] = 0XBF; mem.main[0XFF12] = 0XF3;
     mem.main[0XFF13] = 0XFF; mem.main[0XFF14] = 0XBF;
     mem.main[0XFF16] = 0X3F; mem.main[0XFF17] = 0X00;
@@ -58,6 +61,79 @@ bool cart_has_RAM(uint8_t cart_type) {
     }
 }
 
+int mem_load_boot(char **filename) {
+    FILE *rom;
+
+    if ( (rom = fopen(*(filename), "rb")) == NULL) {
+        fprintf(stderr, "[Error] mem.c: Cannot read rom <%s>\n", *filename);
+        fclose(rom);
+        return 1;
+    }
+
+    int read_status = 0;
+    if ((read_status = fread(&mem.main, 1, 0X8000, rom)) == 0) {
+        fprintf(stderr, "[Error] mem.c: mem_load_boot: Could not read <%s> cartrige header, bytes read: %d\n", *filename, read_status);
+        fclose(rom);
+        return 1;
+    }
+
+    fclose(rom);
+
+
+    mem.main[0X104] = 0XCE;
+    mem.main[0X105] = 0Xed;
+    mem.main[0X106] = 0X66;
+    mem.main[0X107] = 0X66;
+    mem.main[0X108] = 0Xcc;
+    mem.main[0X109] = 0X0d;
+    mem.main[0X10a] = 0X00;
+    mem.main[0X10b] = 0X0b;
+    mem.main[0X10c] = 0X03;
+    mem.main[0X10d] = 0X73;
+    mem.main[0X10e] = 0X00;
+    mem.main[0X10f] = 0X83;
+    mem.main[0X110] = 0X00;
+    mem.main[0X111] = 0X0c;
+    mem.main[0X112] = 0X00;
+    mem.main[0X113] = 0X0d;
+
+    mem.main[0X114] = 0X00;
+    mem.main[0X115] = 0X08;
+    mem.main[0X116] = 0X11;
+    mem.main[0X117] = 0X1f;
+    mem.main[0X118] = 0X88;
+    mem.main[0X119] = 0X89;
+    mem.main[0X11a] = 0X00;
+    mem.main[0X11b] = 0X0e;
+    mem.main[0X11c] = 0Xdc;
+    mem.main[0X11d] = 0Xcc;
+    mem.main[0X11e] = 0X6e;
+    mem.main[0X11f] = 0Xe6;
+    mem.main[0X120] = 0Xdd;
+    mem.main[0X121] = 0Xdd;
+    mem.main[0X122] = 0Xd9;
+    mem.main[0X123] = 0X99;
+
+    mem.main[0X124] = 0XBB;
+    mem.main[0X125] = 0XBB;
+    mem.main[0X126] = 0X67;
+    mem.main[0X127] = 0X63;
+    mem.main[0X128] = 0X6e;
+    mem.main[0X129] = 0X0e;
+    mem.main[0X12a] = 0Xec;
+    mem.main[0X12b] = 0Xcc;
+    mem.main[0X12c] = 0Xdd;
+    mem.main[0X12d] = 0Xdc;
+    mem.main[0X12e] = 0X99;
+    mem.main[0X12f] = 0X9f;
+    mem.main[0X130] = 0Xbb;
+    mem.main[0X131] = 0Xb9;
+    mem.main[0X132] = 0X33;
+    mem.main[0X133] = 0X3e;
+
+    return 0;
+}
+
 int mem_cartridge_load(char **filename) {
     FILE *rom;
     if ( (rom = fopen(*(filename), "rb")) == NULL) {
@@ -87,6 +163,7 @@ int mem_cartridge_load(char **filename) {
     // create memory banks
     if (mem.cartridge_header.ROM_size != 0X00) {
         // (Banksize << (value + 1)) - base banks
+        mem.hasROMbanks = true;
         int banksize = ROM_BANK_SIZE * (1 << mem.cartridge_header.ROM_size);
         if ((mem.ROMbanks = malloc(banksize * sizeof(uint8_t))) == NULL) {
             fprintf(stderr, "[Error] mem.c: Could malloc ROMbanks\n");
@@ -105,6 +182,7 @@ int mem_cartridge_load(char **filename) {
 
     // allocating for RAM banks
     if (cart_has_RAM(mem.cartridge_header.cartridge_type)) {
+        mem.hasRAMbanks = true;
         if (mem.cartridge_header.RAM_size >= 0X02 && mem.cartridge_header.RAM_size <= 0X05) {
             switch(mem.cartridge_header.RAM_size) {
                 case(0X02): mem.RAMbanks = malloc(RAM_BANK_SIZE * 1); break;
@@ -135,16 +213,15 @@ uint8_t *mem_pointer(uint16_t addr) {
 uint8_t mem_read(uint16_t addr) {
      uint8_t data = 0XFF;
 
-     if (addr >= 0X0000 && addr <= 0X3FFF) {
+     if (addr <= 0X3FFF) {
          // ROM bank 00
          data = mem.main[addr];
      } else if (addr >= 0X4000 && addr <= 0X7FFF) {
          // ROM bank 01-FF
-         if (mem.ROM_bank_number == 0X01) {
+         if (!mem.hasROMbanks || mem.ROM_bank_number == 0X01) {
             // this emulator stores bank 0X01 in main memory
              data = mem.main[addr];
-         }
-         else {
+         } else {
              // transforming addr to map to ROM banks
              data = mem.ROMbanks[mem.ROM_bank_number * ROM_BANK_SIZE + addr - 0X4000];
          }
@@ -176,6 +253,8 @@ uint8_t mem_read(uint16_t addr) {
      } else if (addr >= 0XFF80 && addr <= 0XFFFE) {
          // High RAM
          data = mem.main[addr];
+     } else {
+         data = mem.main[addr];
      }
 
 
@@ -184,25 +263,27 @@ uint8_t mem_read(uint16_t addr) {
 
 void mem_write(uint16_t addr, uint8_t data) {
 
-    if (addr >= 0X0000 && addr <= 0X1FFF) {
+    if (addr <= 0X1FFF) {
         // Enabling RAM bank
-        if (!mem.RAM_enabled) {
+        if (mem.hasRAMbanks && !mem.RAM_enabled) {
             // enable RAM when 0X0A has been written to range
             if (data == 0X0A) mem.RAM_enabled = true;
 
             return;
         }
     } else if (addr >= 0X2000 && addr <= 0X3FFF) {
-        // ROM bank select for range 0X4000 - 0X7FFF
-        // 5-bit RAM banking number
-        data &= 0b00011111;
+        if (mem.hasROMbanks) {
+            // ROM bank select for range 0X4000 - 0X7FFF
+            // 5-bit RAM banking number
+            data &= 0b00011111;
 
-        // bank number of 0X00 is equal to 0X01
-        if (data == 0X00) data = 0X01;
+            // bank number of 0X00 is equal to 0X01
+            if (data == 0X00) data = 0X01;
 
-        // &= 0b11100000 to save upper 3 bits for extended cart size
-        mem.ROM_bank_number &= 0b11100000;
-        mem.ROM_bank_number |= data;
+            // &= 0b11100000 to save upper 3 bits for extended cart size
+            mem.ROM_bank_number &= 0b11100000;
+            mem.ROM_bank_number |= data;
+        }
     } else if (addr >= 0X4000 && addr <= 0X5FFF) {
         // RAM bank select or ROM bank select extension
         // 2-bit value
@@ -239,7 +320,7 @@ void mem_write(uint16_t addr, uint8_t data) {
     } else if (addr >= 0XFE00 && addr <= 0XFE9F) {
         // Object Attribute Memory
         mem.main[addr] = data;
-        mem.main[addr - 0X2000] = data;
+        // mem.main[addr - 0X2000] = data; DONT KNOW WHAT THIS IS
     } else if (addr >= 0XFF00 && addr <= 0XFF7F) {
         // I/O Registers
         if (addr == mDMA) {
@@ -249,10 +330,10 @@ void mem_write(uint16_t addr, uint8_t data) {
             // write from 0XBB00 - 0XBB9F to OAM (0XFE00 - 0XFE9F)
             for (int i = 0; i < 0XA0; i++)
                 mem_write(0XFE00 + i, mem_read(DMA_transfer_addr + i));
-
-            return;
         }
-
+        // BUG: for testing purposes
+        if (addr == 0XFF01) fprintf(stderr, "%c", data);
+        if (addr == mIF) return;
         if (addr == mDIV) data = 0;
         if (addr == mLY) data = 0;
 
@@ -261,5 +342,16 @@ void mem_write(uint16_t addr, uint8_t data) {
     } else if (addr >= 0XFF80 && addr <= 0XFFFE) {
         // High RAM
         mem.main[addr] = data;
+    } else {
+        mem.main[addr] = data;
     }
  }
+
+uint8_t mem_checksum() {
+    uint8_t checksum = 0;
+    for (int i = 0x0134; i <= 0x014C; i++) {
+        checksum = checksum - mem_read(i) - 1;
+    }
+
+    return checksum;
+}
