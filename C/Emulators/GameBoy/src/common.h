@@ -10,6 +10,7 @@
 #define RESET_BIT(a, b) (a & ~(1 << b))
 #define SET_BIT(a, b) (a | (1 << b))
 
+#define MAXCYCLES 69905
 #define CPU_CLOCK 4194304
 
 // memory location defines

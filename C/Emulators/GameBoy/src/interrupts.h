@@ -29,10 +29,8 @@ struct interrupt_handler {
 /*
 ** Interrupt device connnections
 ** cpu_IME -> IME enabled?
-**
 */
-extern void cpu_ISR_start(uint8_t service_routine_addr);
-extern void cpu_ISR_return();
+extern void cpu_ISR(uint8_t service_routine_addr);
 extern bool cpu_IME();
 
 /* Memory functions */

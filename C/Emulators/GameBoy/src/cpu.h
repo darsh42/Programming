@@ -71,6 +71,10 @@ struct cpu {
     bool IME;
 
     /*
+    ** When EI is set it will set IME next cycle
+    */
+    bool EI;
+    /*
     ** Convenience attrs
     */
     int clock;

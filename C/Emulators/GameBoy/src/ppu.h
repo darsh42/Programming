@@ -8,12 +8,13 @@
 #define TILEDATA_ADDR(tile_num, mode) (mode) ? SIGNED_ADDR(tile_num): UNSIGNED_ADDR(tile_num)
 #define TILEINDEX_ADDR(a) (a) ? 0X9C00 : 0X9800
 
-
 #define OAM_ENTRY_SIZE_BYTES 4
 #define OAM_SEARCH_MODE 2
 #define PIXEL_TRANSFER_MODE 3
 #define HBLANK 0
 #define VBLANK 1
+
+extern int sdl_render();
 
 struct ppu {
     /*
@@ -78,41 +79,6 @@ struct ppu {
     // new impl
     int ticks;
     int pixel;
-};
-
-struct fetcher {
-    // fetch clock
-    int ticks;
-
-    /*
-    ** fetcher mode
-    ** - 0b00 - read tile ID
-    ** - 0b01 - read tile lsb
-    ** - 0b10 - read tile msb
-    ** - 0b11 - push to FIFO
-    */
-    int mode;
-
-    // store tile number
-    int tile_num;
-    int tile_id;
-
-    uint8_t lsb;
-    uint8_t msb;
-
-    // store pixel data
-    int FIFO_back[16];
-    int FIFO_sprite[16];
-
-    // keep FIFO indexes
-    int back_index;
-    int sprite_index;
-
-    // store tile map and tile data base addresses
-    uint16_t tile_map_addr;
-    uint16_t tile_data_addr;
-
-    uint8_t tile_line;
 };
 
 /* Interrupt functions */

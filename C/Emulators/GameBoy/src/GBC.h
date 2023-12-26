@@ -9,6 +9,7 @@ extern int mem_cartridge_load(char **filename);
 
 // cpu clock handles
 extern int cpu_clocks();
+extern int cpu_clocks_ins(int oldtime);
 extern void cpu_clock_reset();
 
 // Device initization functions
@@ -21,10 +22,10 @@ extern void init_timer();
 extern void init_handler();
 
 // Device Execution functions
-extern void cpu_exec();
-extern void ppu_exec();
+extern int cpu_exec();
+extern void ppu_exec(int cpu_ticks);
 extern void apu_exec();
-extern void update_timers(int oldtime, int currenttime);
+extern void update_timers(int cpu_ticks);
 extern void handle_interrupts();
 
 // Rendering Functions

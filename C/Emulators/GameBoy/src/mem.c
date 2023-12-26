@@ -5,7 +5,6 @@ struct mem mem;
 
 struct mem *get_mem() {return &mem;}
 
-
 /* Initizializes memory and sets High RAM */
 void mem_init() {
     // Set default ROM bank
@@ -138,7 +137,6 @@ int mem_cartridge_load(char **filename) {
     FILE *rom;
     if ( (rom = fopen(*(filename), "rb")) == NULL) {
         fprintf(stderr, "[Error] mem.c: Cannot read rom <%s>\n", *filename);
-        fclose(rom);
         return 1;
     }
 

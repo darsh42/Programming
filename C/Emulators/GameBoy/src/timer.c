@@ -2,7 +2,6 @@
 
 struct timers timers;
 
-
 struct timers *get_timers() {
     return &timers;
 }
@@ -16,26 +15,22 @@ void init_timer() {
     timers.m_timer_cycle_inc = CPU_CLOCK/4096;
 }
 
-bool enable_timer() {return (*timers.TAC & 0b00000100) == 0b00000100;}
+bool enable_timer() {
+    return (*timers.TAC & 0b00000100) == 0b00000100;
+}
 
 void set_clock_freq() {
-    int freq;
-
     switch(*timers.TAC & 0b00000011) {
-        case(0): freq = 4096;   break;
-        case(1): freq = 262144; break;
-        case(2): freq = 65536;  break;
-        case(3): freq = 16384;  break;
+        case(0b00): timers.m_timer_cycle_inc = 4096; break;
+        case(0b01): timers.m_timer_cycle_inc = 16;   break;
+        case(0b10): timers.m_timer_cycle_inc = 64;   break;
+        case(0b11): timers.m_timer_cycle_inc = 256;  break;
     }
-
-    timers.m_timer_cycle_inc = CPU_CLOCK/freq;
 
     return;
 }
 
-void update_timers(int oldtime, int currenttime) {
-    int cycles = currenttime - oldtime;
-
+void update_timers(int cycles) {
     timers.m_divider_cycle_inc -= cycles;
     if (timers.m_divider_cycle_inc <= 0) {
         timers.m_divider_cycle_inc = 255;

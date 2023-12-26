@@ -17,19 +17,20 @@ void interrupt_request(uint8_t request) {
 }
 
 void service_interrupt(int interrupt) {
+    // reset interrupt bit
     *handler.IF = RESET_BIT(*handler.IF, interrupt);
 
     switch(interrupt) {
         // VBlank service call
-        case(0): cpu_ISR_start(0X40); break;
+        case(0): cpu_ISR(0X40); break;
         // LCD service call
-        case(1): cpu_ISR_start(0X48); break;
+        case(1): cpu_ISR(0X48); break;
         // Timer service call
-        case(2): cpu_ISR_start(0X50); break;
+        case(2): cpu_ISR(0X50); break;
         // Serial service call
-        case(3): cpu_ISR_start(0X58); break;
+        case(3): cpu_ISR(0X58); break;
         // Joypad service call
-        case(4): cpu_ISR_start(0X60); break;
+        case(4): cpu_ISR(0X60); break;
     }
 }
 
@@ -43,6 +44,7 @@ void handle_interrupts() {
     // if no interrupt is enabled
     if (*handler.IE == 0) return;
 
+    // test for interrupts in prority order
     for (int i = 0; i < 5; i++) {
         if (TEST_BIT(*handler.IF, i) && TEST_BIT(*handler.IE, i)) {
             service_interrupt(i);

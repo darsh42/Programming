@@ -18,19 +18,18 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (mem_load_boot(argv+=1) != 0) return 1;
+    if (mem_cartridge_load(argv+=1) != 0) return 1;
 
     gameboy_init();
 
     bool emulate = true;
-    int MAXCYCLES = 69905;
-    int oldtime = 0;
+    int cycles = 0;
 
     while (emulate) {
-        while ((oldtime = cpu_clocks()) < MAXCYCLES) {
-            cpu_exec();
-            ppu_exec();
-            update_timers(oldtime, cpu_clocks());
+        while (cpu_clocks()< MAXCYCLES) {
+            cycles = cpu_exec();
+            ppu_exec(cycles);
+            update_timers(cycles);
             handle_interrupts();
             if (debugger_update() != 0) {
                 emulate = false;
