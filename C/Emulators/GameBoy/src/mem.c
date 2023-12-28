@@ -247,6 +247,9 @@ uint8_t mem_read(uint16_t addr) {
          data = mem.main[addr];
      } else if (addr >= 0XFF00 && addr <= 0XFF7F) {
          // I/O Registers
+         // BUG: implemented for testing purposes
+         // if (addr == 0XFF44) return 0X90;
+
          data = mem.main[addr];
      } else if (addr >= 0XFF80 && addr <= 0XFFFE) {
          // High RAM

@@ -35,8 +35,11 @@ void debugger_log_state() {
 
     PC = debugger.cpu->PC;
     SP = debugger.cpu->SP;
-
-    fprintf(log, "A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X SP: %04X PC: 00:%04X\n", A, F, B, C, D, E, H, L, SP, PC);
+    uint8_t PC_mem_1 = mem_read(PC+0);
+    uint8_t PC_mem_2 = mem_read(PC+1);
+    uint8_t PC_mem_3 = mem_read(PC+2);
+    uint8_t PC_mem_4 = mem_read(PC+3);
+    fprintf(log, "A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n", A, F, B, C, D, E, H, L, SP, PC, PC_mem_1, PC_mem_2, PC_mem_3, PC_mem_4);
 }
 
 int debugger_get_addr() {

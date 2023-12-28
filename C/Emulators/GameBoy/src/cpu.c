@@ -23,11 +23,11 @@ void cpu_init() {
     cpu.PC = 0X100;
     cpu.SP = 0XFFFE;
 
-    cpu.AF.upper = 0X11;
-    cpu.AF.lower = (mem_checksum() == 0) ? 0X80: 0XC0;
+    cpu.AF.full = 0X01B0;
+    // cpu.AF.lower = (mem_checksum() == 0) ? 0X80: 0XC0;
     cpu.BC.full = 0X0013;
     cpu.DE.full = 0X00D8;
-    cpu.HL.full = 0X004D;
+    cpu.HL.full = 0X014D;
 
     cpu.IME = 0;
     cpu.prefix = 0;
@@ -59,12 +59,21 @@ void cpu_ISR(uint8_t service_routine_addr) {
     cpu.clock += 5;
 }
 
-int opcodes(uint8_t opcode);
+int opcodes();
 
-int prefixed(uint8_t opcode);
+int prefixed();
 
 int cpu_exec() {
+    if (cpu.HALT) {
+        if ((mem_read(mIE) & mem_read(mIF)) != 0) {
+            cpu.HALT = false;
+        }
+
+        return 0;
+    }
+
     int cycles;
+
     cpu.CIR = mem_read(cpu.PC++);
 
     if (cpu.EI) {
@@ -72,23 +81,22 @@ int cpu_exec() {
         cpu.EI = false;
     }
 
-    if (cpu.prefix) cycles = prefixed(cpu.CIR);
-    else            cycles = opcodes(cpu.CIR);
+    cycles = opcodes();
+
+    cpu.clock += cycles;
 
     // make sure lower nybble of flags reg is always clear
     cpu.AF.lower &= 0XF0;
-
-    cpu.clock += cycles;
     return cycles;
 }
 
 int ADC(uint8_t val, bool indirect) {
-    uint8_t tmp = cpu.AF.upper +  val + FC;
+    uint8_t tmp = cpu.AF.upper + val + FC;
 
     FLAG_SET_Z(tmp == 0);
     FLAG_SET_N(0);
-    FLAG_SET_H(HALF_CARRY(cpu.AF.upper, (val + FC), +));
-    FLAG_SET_C(CARRY(cpu.AF.upper, (val + FC), +));
+    FLAG_SET_H(((cpu.AF.upper & 0Xf) + (val & 0Xf) + FC) > 0Xf)
+    FLAG_SET_C(((cpu.AF.upper & 0Xff) + (val & 0Xff) + FC) > 0Xff)
 
     cpu.AF.upper = tmp;
     return (indirect) ? 8: 4;
@@ -118,9 +126,9 @@ int ADDHL(uint16_t val) {
 }
 
 int ADDSP(int8_t val) {
-    uint8_t tmp = cpu.SP +  val;
+    uint16_t tmp = cpu.SP + val;
 
-    FLAG_SET_Z(tmp == 0);
+    FLAG_SET_Z(0);
     FLAG_SET_N(0);
     FLAG_SET_H(HALF_CARRY(cpu.SP, val, +));
     FLAG_SET_C(CARRY(cpu.SP, val, +));
@@ -144,7 +152,9 @@ int AND(uint8_t val, bool indirect) {
 int BIT(uint8_t val, uint8_t bit, bool indirect) {
     bool tmp = TEST_BIT(val, bit);
 
-    if (!FZ) FLAG_SET_Z(tmp);
+    FLAG_SET_Z(!tmp);
+    FLAG_SET_N(0);
+    FLAG_SET_H(1);
 
     return (indirect) ? 8: 4;
 }
@@ -165,12 +175,16 @@ int CALLCC(bool condition) {
         cycles += CALL();
     } else {
         cycles += 3;
+        cpu.PC++;
+        cpu.PC++;
     }
 
     return cycles;
 }
 
 int CCF() {
+    FLAG_SET_N(0);
+    FLAG_SET_H(0);
     FLAG_SET_C(!FC);
     return 4;
 }
@@ -233,7 +247,13 @@ int DEC(reg_u *reg, bool upper) {
 }
 
 int DECHL() {
-    mem_write(cpu.HL.full, mem_read(cpu.HL.full) - 1);
+    uint8_t tmp = mem_read(cpu.HL.full);
+
+    FLAG_SET_Z(tmp - 1 == 0);
+    FLAG_SET_N(1);
+    FLAG_SET_H(MINHALF_CARRY(tmp, 1));
+
+    mem_write(cpu.HL.full, tmp - 1);
     return 8;
 }
 
@@ -255,6 +275,7 @@ int EI() {
 }
 
 int HALT() {
+    cpu.HALT = true;
     return 4;
 }
 
@@ -271,7 +292,13 @@ int INC(reg_u *reg, bool upper) {
 }
 
 int INCHL() {
-    mem_write(cpu.HL.full, mem_read(cpu.HL.full) + 1);
+    uint8_t tmp = mem_read(cpu.HL.full);
+
+    FLAG_SET_Z((uint8_t) (tmp + 1) == 0);
+    FLAG_SET_N(0);
+    FLAG_SET_H(HALF_CARRY(tmp, 1, +));
+
+    mem_write(cpu.HL.full, tmp + 1);
     return 8;
 }
 
@@ -423,21 +450,22 @@ int LDSPn16() {
 }
 
 int LDn16SP() {
-    mem_write(mem_read(cpu.PC++), cpu.SP & 0XFF);
-    mem_write(mem_read(cpu.PC++), cpu.SP << 8);
+    uint16_t addr = GET_16_BIT();
+    mem_write(addr + 0, cpu.SP & 0XFF);
+    mem_write(addr + 1, cpu.SP >> 8);
 
     return 20;
 }
 
 int LDHLSPe8() {
-    uint16_t tmp = cpu.SP + (int8_t) mem_read(cpu.PC++);
+    int8_t tmp = mem_read(cpu.PC++);
 
     FLAG_SET_Z(0);
     FLAG_SET_N(0);
-    FLAG_SET_H(HALF_CARRY(cpu.SP, mem_read(cpu.PC-1), +));
-    FLAG_SET_C(CARRY(cpu.SP, mem_read(cpu.PC-1), +));
+    FLAG_SET_H(HALF_CARRY(cpu.SP, tmp, +));
+    FLAG_SET_C(CARRY(cpu.SP, tmp, +));
 
-    cpu.HL.full = tmp;
+    cpu.HL.full = cpu.SP + tmp;
     return 12;
 }
 
@@ -476,7 +504,7 @@ int PUSH(uint16_t val) {
     return 16;
 }
 
-int RES(reg_u *reg, uint8_t bit, bool upper) {
+int RES(reg_u *reg, bool upper, uint8_t bit) {
     uint8_t tmp = RESET_BIT(UPPER_LOWER(reg, upper), bit);
     if (upper) reg->upper = tmp;
     else       reg->lower = tmp;
@@ -494,13 +522,14 @@ int RET() {
 }
 
 int RETCC(bool condition) {
+    int cycles;
     if (condition) {
-        RET();
+        cycles = RET() + 4;
     } else {
-        return 1;
+        cycles = 8;
     }
 
-    return 1;
+    return cycles;
 }
 
 int RETI() {
@@ -535,12 +564,18 @@ int RLHL() {
 }
 
 int RLA() {
-    return RL(&cpu.AF, true) - 4;
+    int cycles = RL(&cpu.AF, true) - 4;
+
+    FLAG_SET_Z(0);
+    FLAG_SET_Z(0);
+    FLAG_SET_Z(0);
+
+    return cycles;
 }
 
 int RLC(reg_u *reg, bool upper) {
     uint8_t val = UPPER_LOWER(reg, upper);
-    uint8_t tmp = (val << 7) | TEST_BIT(val, 7);
+    uint8_t tmp = (val << 1) | TEST_BIT(val, 7);
 
     FLAG_SET_Z(tmp == 0);
     FLAG_SET_N(0);
@@ -566,7 +601,13 @@ int RLCHL() {
 }
 
 int RLCA() {
-    return RLC(&cpu.AF, true) - 4;
+    int cycles = RLC(&cpu.AF, true) - 4;
+
+    FLAG_SET_Z(0);
+    FLAG_SET_N(0);
+    FLAG_SET_H(0);
+
+    return cycles;
 }
 
 int RR(reg_u *reg, bool upper) {
@@ -596,7 +637,10 @@ int RRHL() {
 }
 
 int RRA() {
-    return RR(&cpu.AF, true) - 4;
+    int cycles = RR(&cpu.AF, true) - 4;
+    FLAG_SET_Z(0);
+
+    return cycles;
 }
 
 int RRC(reg_u *reg, bool upper) {
@@ -627,7 +671,13 @@ int RRCHL() {
 }
 
 int RRCA() {
-    return RRC(&cpu.AF, true) - 4;
+    int cycles = RRC(&cpu.AF, true) - 4;
+
+    FLAG_SET_Z(0);
+    FLAG_SET_Z(0);
+    FLAG_SET_Z(0);
+
+    return cycles;
 }
 
 int RST(uint8_t addr) {
@@ -643,19 +693,21 @@ int SBC(uint8_t val, bool implied) {
 
     FLAG_SET_Z(tmp == 0);
     FLAG_SET_N(1);
-    FLAG_SET_H(MINHALF_CARRY(cpu.AF.upper, (val + FC)));
-    FLAG_SET_C(MINCARRY(cpu.AF.upper, (val + FC)));
+    FLAG_SET_H(((cpu.AF.upper & 0Xf) - (val & 0Xf) - FC) < 0)
+    FLAG_SET_C(((cpu.AF.upper & 0Xff) - (val & 0Xff) - FC) < 0)
 
     cpu.AF.upper = tmp;
     return (implied) ? 8: 4;
 }
 
 int SCF() {
+    FLAG_SET_N(0);
+    FLAG_SET_H(0);
     FLAG_SET_C(1);
     return 4;
 }
 
-int SET(reg_u *reg, uint8_t bit, bool upper) {
+int SET(reg_u *reg, bool upper, uint8_t bit) {
     if (upper) reg->upper = SET_BIT(reg->upper, bit);
     else       reg->lower = SET_BIT(reg->lower, bit);
 
@@ -669,7 +721,7 @@ int SETHL(uint8_t bit) {
 
 int SLA(reg_u *reg, bool upper) {
     uint8_t val = UPPER_LOWER(reg, upper);
-    uint8_t tmp = (val << 1) | TEST_BIT(val, 7);
+    uint8_t tmp = (val << 1);
 
     FLAG_SET_Z(tmp == 0);
     FLAG_SET_N(0);
@@ -683,7 +735,7 @@ int SLA(reg_u *reg, bool upper) {
 
 int SLAHL() {
     uint8_t val = mem_read(cpu.HL.full);
-    uint8_t tmp = (val << 1) | TEST_BIT(val, 7);
+    uint8_t tmp = (val << 1);
 
     FLAG_SET_Z(tmp == 0);
     FLAG_SET_N(0);
@@ -723,7 +775,7 @@ int SRAHL() {
 
 int SRL(reg_u *reg, bool upper) {
     uint8_t val = UPPER_LOWER(reg, upper);
-    uint8_t tmp = (val >> 1);
+    uint8_t tmp = (val >> 1) & 0b01111111;
 
     FLAG_SET_Z(tmp == 0);
     FLAG_SET_N(0);
@@ -737,7 +789,7 @@ int SRL(reg_u *reg, bool upper) {
 
 int SRLHL() {
     uint8_t val = mem_read(cpu.HL.full);
-    uint8_t tmp = (val >> 1);
+    uint8_t tmp = (val >> 1) & 0b01111111;
 
     FLAG_SET_Z(tmp == 0);
     FLAG_SET_N(0);
@@ -764,7 +816,7 @@ int SUB(uint8_t val, bool indirect) {
 
 int SWAP(reg_u *reg, bool upper) {
     uint8_t val = UPPER_LOWER(reg, upper);
-    uint8_t tmp = (val << 4) & (val >> 4);
+    uint8_t tmp = (val << 4) | (val >> 4);
 
     FLAG_SET_Z(tmp == 0);
     FLAG_SET_N(0);
@@ -779,7 +831,7 @@ int SWAP(reg_u *reg, bool upper) {
 
 int SWAPHL() {
     uint8_t val = mem_read(cpu.HL.full);
-    uint8_t tmp = (val << 4) & (val >> 4);
+    uint8_t tmp = (val << 4) | (val >> 4);
 
     FLAG_SET_Z(tmp == 0);
     FLAG_SET_N(0);
@@ -802,10 +854,10 @@ int XOR(uint8_t val, bool indirect) {
     return (indirect) ? 8: 4;
 }
 
-int opcodes(uint8_t opcode) {
+int opcodes() {
     int cycles = 0;
 
-    switch(opcode) {
+    switch(cpu.CIR) {
         // ADC
         case(0X88): cycles += ADC(cpu.BC.upper, 0); break;
         case(0X89): cycles += ADC(cpu.BC.lower, 0); break;
@@ -814,7 +866,7 @@ int opcodes(uint8_t opcode) {
         case(0X8C): cycles += ADC(cpu.HL.upper, 0); break;
         case(0X8D): cycles += ADC(cpu.HL.lower, 0); break;
         case(0X8E): cycles += ADC(mem_read(cpu.HL.full), 1); break;
-        case(0X8F): cycles += ADC(cpu.AF.lower, 0); break;
+        case(0X8F): cycles += ADC(cpu.AF.upper, 0); break;
 
         case(0XCE): cycles += ADC(mem_read(cpu.PC++), 1); break;
 
@@ -846,8 +898,8 @@ int opcodes(uint8_t opcode) {
         case(0XA3): cycles += AND(cpu.DE.lower, 0); break;
         case(0XA4): cycles += AND(cpu.HL.upper, 0); break;
         case(0XA5): cycles += AND(cpu.HL.lower, 0); break;
-        case(0XA7): cycles += AND(mem_read(cpu.HL.full), 1); break;
-        case(0XA6): cycles += AND(cpu.AF.upper, 0); break;
+        case(0XA6): cycles += AND(mem_read(cpu.HL.full), 1); break;
+        case(0XA7): cycles += AND(cpu.AF.upper, 0); break;
 
         case(0XE6): cycles += AND(mem_read(cpu.PC++), 1); break;
 
@@ -1077,9 +1129,9 @@ int opcodes(uint8_t opcode) {
         // RET
         case(0XC9): cycles += RET(); break;
         case(0XC0): cycles += RETCC(!FZ); break;
-        case(0XD0): cycles += RETCC(!FZ); break;
+        case(0XD0): cycles += RETCC(!FC); break;
         case(0XC8): cycles += RETCC(FZ); break;
-        case(0XD8): cycles += RETCC(FZ); break;
+        case(0XD8): cycles += RETCC(FC); break;
 
         case(0XD9): cycles += RETI(); break;
 
@@ -1144,14 +1196,14 @@ int opcodes(uint8_t opcode) {
         case(0XEE): cycles += XOR(mem_read(cpu.PC++), 1); break;
 
         // prefix on
-        case(0XCB): cycles += cpu.prefix = true; break;
+        case(0XCB): cpu.CIR = mem_read(cpu.PC++); cycles += prefixed(); break;
         default: break;
     }
 
     return cycles;
 }
 
-int prefixed(uint8_t opcode) {
+int prefixed() {
     reg_u *reg;
     bool upper;
     int cycles = 0;
@@ -1159,34 +1211,26 @@ int prefixed(uint8_t opcode) {
     cpu.prefix = false;
 
     // determine which register used
-    switch(opcode & 0X0F) {
-        case(0X00): reg = &cpu.BC; upper = 1; break;
-        case(0X01): reg = &cpu.BC; upper = 0; break;
-        case(0X02): reg = &cpu.DE; upper = 1; break;
-        case(0X03): reg = &cpu.DE; upper = 0; break;
-        case(0X04): reg = &cpu.HL; upper = 1; break;
-        case(0X05): reg = &cpu.HL; upper = 0; break;
-        case(0X07): reg = &cpu.AF; upper = 1; break;
-
-        case(0X08): reg = &cpu.BC; upper = 1; break;
-        case(0X09): reg = &cpu.BC; upper = 0; break;
-        case(0X0A): reg = &cpu.DE; upper = 1; break;
-        case(0X0B): reg = &cpu.DE; upper = 0; break;
-        case(0X0C): reg = &cpu.HL; upper = 1; break;
-        case(0X0D): reg = &cpu.HL; upper = 0; break;
-        case(0X0F): reg = &cpu.AF; upper = 1; break;
+    switch(cpu.CIR & 0X0F) {
+        case(0X00): case(0X08): reg = &cpu.BC; upper = 1; break; // REG B
+        case(0X01): case(0X09): reg = &cpu.BC; upper = 0; break; // REG C
+        case(0X02): case(0X0A): reg = &cpu.DE; upper = 1; break; // REG D
+        case(0X03): case(0X0B): reg = &cpu.DE; upper = 0; break; // REG E
+        case(0X04): case(0X0C): reg = &cpu.HL; upper = 1; break; // REG H
+        case(0X05): case(0X0D): reg = &cpu.HL; upper = 0; break; // REG L
+        case(0X07): case(0X0F): reg = &cpu.AF; upper = 1; break; // REG A
     }
 
-    switch(opcode) {
+    switch(cpu.CIR) {
         // RLC
         case(0X00):
         case(0X01):
         case(0X02):
         case(0X03):
         case(0X04):
-        case(0X05): cycles += RLC(reg, upper); break;
+        case(0X05):
+        case(0X07): cycles += RLC(reg, upper); break;
         case(0X06): cycles += RLCHL(); break;
-        case(0X07): cycles += RLCA(); break;
 
         // RRC
         case(0X08):
@@ -1194,9 +1238,9 @@ int prefixed(uint8_t opcode) {
         case(0X0A):
         case(0X0B):
         case(0X0C):
-        case(0X0D): cycles += RRC(reg, upper); break;
+        case(0X0D):
+        case(0X0F): cycles += RRC(reg, upper); break;
         case(0X0E): cycles += RRCHL(); break;
-        case(0X0F): cycles += RRCA(); break;
 
         // RL
         case(0X10):
@@ -1204,9 +1248,9 @@ int prefixed(uint8_t opcode) {
         case(0X12):
         case(0X13):
         case(0X14):
-        case(0X15): cycles += RL(reg, upper); break;
+        case(0X15):
+        case(0X17): cycles += RL(reg, upper); break;
         case(0X16): cycles += RLHL(); break;
-        case(0X17): cycles += RLA(); break;
 
         // RR
         case(0X18):
@@ -1214,9 +1258,9 @@ int prefixed(uint8_t opcode) {
         case(0X1A):
         case(0X1B):
         case(0X1C):
-        case(0X1D): cycles += RR(reg, upper); break;
+        case(0X1D):
+        case(0X1F): cycles += RR(reg, upper); break;
         case(0X1E): cycles += RRHL(); break;
-        case(0X1F): cycles += RRA(); break;
 
 
         // SLA

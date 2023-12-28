@@ -23,8 +23,8 @@
 // Calculate Half or Full Carry
 #define     HALF_CARRY16BIT(a, b, sign) (((a & 0X0fff) sign (b & 0X0fff)) & 0X1000) == 0X1000
 #define          CARRY16BIT(a, b, sign) (((a & 0Xffff) sign (b & 0Xffff)) & 0X10000) == 0X10000
-#define     HALF_CARRY(a, b, sign) (((a & 0X0f) sign (b & 0X0f)) & 0X010) == 0X010
-#define          CARRY(a, b, sign) (((a & 0Xff) sign (b & 0Xff)) & 0X100) == 0X100
+#define     HALF_CARRY(a, b, sign) (((a & 0Xf) sign (b & 0Xf)) > 0Xf)
+#define          CARRY(a, b, sign) (((a & 0Xff) sign (b & 0Xff)) > 0Xff)
 #define     MINHALF_CARRY16BIT(a, b) (((a & 0X0fff) - (b & 0X0fff)) < 0)
 #define          MINCARRY16BIT(a, b) (((a & 0Xffff) - (b & 0Xffff)) < 0)
 #define     MINHALF_CARRY(a, b) (((a & 0X0f) - (b & 0X0f)) < 0)
@@ -74,6 +74,11 @@ struct cpu {
     ** When EI is set it will set IME next cycle
     */
     bool EI;
+
+    /*
+    ** HALT state of CPU
+    */
+    bool HALT;
     /*
     ** Convenience attrs
     */
