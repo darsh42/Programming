@@ -1,2 +1,2 @@
 # Programming
-Personal programming folder
+Project folder
