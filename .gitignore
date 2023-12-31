@@ -9,3 +9,5 @@ Python/Raycaster/
 C/Raycaster/src/core
 C/WindowManager/src/tinywm
 GLSL/
+C/Emulators/Gameboy/tests
+C/Emulators/Gameboy/roms

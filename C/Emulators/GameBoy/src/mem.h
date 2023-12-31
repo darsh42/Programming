@@ -46,6 +46,9 @@ struct mem {
 
     uint8_t main[0X10000];
 
+    /* Pixel Transfer disables CPU writes to VRAM */
+    bool pixel_transfer;
+
     /* Memory Banks */
     bool hasROMbanks;
     bool ROM_bank_mode;

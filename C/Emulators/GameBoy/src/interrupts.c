@@ -35,8 +35,8 @@ void service_interrupt(int interrupt) {
 }
 
 void handle_interrupts() {
-    // If no master interrupt
-    if (!cpu_IME()) return;
+    // If no master interrupt and no HALT mode enabled
+    if (!cpu_IME() && !cpu_HALT()) return;
 
     // if no interrupt requested
     if (*handler.IF == 0) return;

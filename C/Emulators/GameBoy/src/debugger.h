@@ -8,6 +8,7 @@
 #include "mem.h"
 #include "timer.h"
 #include "interrupts.h"
+#include "sdl.h"
 
 #include <ncurses.h>
 
@@ -19,6 +20,7 @@ extern struct ppu *get_ppu();
 extern struct mem *get_mem();
 extern struct timers *get_timers();
 extern struct interrupt_handler *get_handler();
+extern struct joypad *get_joypad();
 
 struct debugger {
     struct cpu *cpu;
@@ -26,6 +28,7 @@ struct debugger {
     struct mem *mem;
     struct timers *timers;
     struct interrupt_handler *handler;
+    struct joypad *joypad;
 };
 
 #endif // DEBUGGER_H_INCLUDED

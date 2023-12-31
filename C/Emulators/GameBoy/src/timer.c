@@ -21,10 +21,10 @@ bool enable_timer() {
 
 void set_clock_freq() {
     switch(*timers.TAC & 0b00000011) {
-        case(0b00): timers.m_timer_cycle_inc = 4096; break;
-        case(0b01): timers.m_timer_cycle_inc = 16;   break;
-        case(0b10): timers.m_timer_cycle_inc = 64;   break;
-        case(0b11): timers.m_timer_cycle_inc = 256;  break;
+        case(0b00): timers.m_timer_cycle_inc = CPU_CLOCK/4096; break;
+        case(0b01): timers.m_timer_cycle_inc = CPU_CLOCK/16;   break;
+        case(0b10): timers.m_timer_cycle_inc = CPU_CLOCK/64;   break;
+        case(0b11): timers.m_timer_cycle_inc = CPU_CLOCK/256;  break;
     }
 
     return;

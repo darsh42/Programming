@@ -50,9 +50,9 @@ int get_colour(int colID) {
 
     switch(col) {
         case(0): return 0XFF;
-        case(1): return 0XAA;
-        case(2): return 0X77;
-        case(3): return 0X22;
+        case(1): return 0X88;
+        case(2): return 0X44;
+        case(3): return 0X00;
     }
 
     return 0;
@@ -61,50 +61,90 @@ int get_colour(int colID) {
 void ppu_exec(int cycles) {
     ppu.ticks += cycles;
 
-    switch(*ppu.LCDS & 0b00000011) {
-        case(OAM_SEARCH_MODE):
-            // OAM search routine
+    ppu.start_mode = *ppu.LCDC & 0b00000011;
+    ppu.interrupt_requested = false;
 
+    // coincidence flag
+    if (*ppu.LY == *ppu.LYC) {
+        (*ppu.LCDS) = SET_BIT(*ppu.LCDS, 2);
+
+        if (TEST_BIT(*ppu.LCDS, 6))
+            interrupt_request(0b00000010);
+    }
+
+    switch(*ppu.LCDS & 0b00000011) {
+        case(OAM_SEARCH_MODE): {
+            if (ppu.ticks < 80) break;
+
+            // OAM search routine
+            for (int sprite_num = 0; sprite_num < 40 && ppu.sprite_count != 10; sprite_num++) {
+                /* get all data from OAM if the object is on the current scanline  *
+                 * and less than 10 objects have been found                        */
+                uint8_t y_pos = mem_read(0XFE00 + 4 * sprite_num + 0);
+                uint8_t x_pos = mem_read(0XFE00 + 4 * sprite_num + 1);
+                uint8_t sprite_height = (TEST_BIT(*ppu.LCDC, 2)) ? 16: 8;
+
+                // is sprite on the screen
+                if (x_pos == 0)
+                    continue;
+
+                // does sprite overlap current scanline
+                if (*ppu.LY + 16 < y_pos)
+                    continue;
+
+                // does sprite overlap current scanline
+                if (*ppu.LY + 16 > y_pos + sprite_height)
+                    continue;
+
+                ppu.sprites[ppu.sprite_count].y_pos = mem_read(0XFE00 + 4 * sprite_num + 0);
+                ppu.sprites[ppu.sprite_count].x_pos = mem_read(0XFE00 + 4 * sprite_num + 1);
+                ppu.sprites[ppu.sprite_count].tile_index = mem_read(0XFE00 + 4 * sprite_num + 0);
+                ppu.sprites[ppu.sprite_count].attributes = mem_read(0XFE00 + 4 * sprite_num + 0);
+                ppu.sprite_count++;
+            }
 
             // end of OAM_SEARCH
-            if (ppu.ticks >= 80) {
-                // change mode to PIXEL_TRANSFER
-                (*ppu.LCDS) = RESET_BIT(*ppu.LCDS, 0);
-                (*ppu.LCDS) = RESET_BIT(*ppu.LCDS, 1);
 
-                (*ppu.LCDS) = SET_BIT(*ppu.LCDS, 0);
-                (*ppu.LCDS) = SET_BIT(*ppu.LCDS, 1);
-            }
+            // change mode to PIXEL_TRANSFER
+            (*ppu.LCDS) = RESET_BIT(*ppu.LCDS, 0);
+            (*ppu.LCDS) = RESET_BIT(*ppu.LCDS, 1);
+
+            (*ppu.LCDS) = SET_BIT(*ppu.LCDS, 0);
+            (*ppu.LCDS) = SET_BIT(*ppu.LCDS, 1);
+
+            ppu.interrupt_requested = TEST_BIT(*ppu.LCDS, 5);
             break;
+        }
         case(PIXEL_TRANSFER_MODE): {
+            // mem_pixel_transfer(true);
+            if (ppu.ticks < 376) break;
+            /************************* BACKGROUND AND WINDOW RENDERING ***************************/
             uint8_t tile_line, tile_id, lsb, msb;
             uint16_t tile_map_addr, tile_data_addr;
             bool usingWin, isSigned;
 
-
-            // if within Window BUG: Removed scolling for cpu testing puposes
+            // if within Window
             if (TEST_BIT(*ppu.LCDC, 5) && *ppu.WY < *ppu.LY) {
                 usingWin = true;
 
                 // when window is on set the window tile
-                // tile_map_addr = 0X9C00  + ((((uint16_t) (*ppu.LY + *ppu.WX))/8) & 0XFF) * 32;
                 if (TEST_BIT(*ppu.LCDC, 6)) {
-                    tile_map_addr = 0X9C00  + ((((uint16_t) (*ppu.LY))/8) & 0XFF) * 32;
+                    tile_map_addr = 0X9C00  + ((((uint16_t) *ppu.WY) / 8) & 0XFF) * 32;
                 } else {
-                    tile_map_addr = 0X9800  + ((((uint16_t) (*ppu.LY))/8) & 0XFF) * 32;
+                    tile_map_addr = 0X9800  + ((((uint16_t) *ppu.WY) / 8) & 0XFF) * 32;
                 }
             } else {
                 // if not in window use the background tile map
                 usingWin = false;
 
                 // get the tile map area
+                // From the top left of the sceen (pos of SCY) get the current scanline down
                 if (TEST_BIT(*ppu.LCDC, 3)) {
-                    tile_map_addr = 0X9C00  + ((((uint16_t) (*ppu.LY))/8) & 0XFF) * 32;
+                    tile_map_addr = 0X9C00  + ((((uint16_t) (*ppu.SCY + *ppu.LY))/8) & 0XFF) * 32;
                 } else {
-                    tile_map_addr = 0X9800  + ((((uint16_t) (*ppu.LY))/8) & 0XFF) * 32;
+                    tile_map_addr = 0X9800  + ((((uint16_t) (*ppu.SCY + *ppu.LY))/8) & 0XFF) * 32;
                 }
             }
-
 
             // get the tile data area
             if (TEST_BIT(*ppu.LCDC, 4)) {
@@ -122,12 +162,12 @@ void ppu_exec(int cycles) {
             for (int pix = 0; pix < 160; pix++) {
                 // if completed a tile in the x-axis go to next tile
                 if (pix % 8 == 0) {
-                    // Account for SCROLLX
-                    uint8_t xoffset = (pix + *ppu.SCX)/8;
+                    // Account for SCROLLX, SCROLLX is the start pos of the screen
+                    uint8_t xoffset = (*ppu.SCX + pix)/8;
 
                     // if the rendering is inside of the window get the xoffset from start of window
                     if (usingWin) {
-                        xoffset -= *ppu.WX;
+                        xoffset = *ppu.WX + pix;
                     }
 
                     // which 8bit wide tile
@@ -168,19 +208,93 @@ void ppu_exec(int cycles) {
                 lsb <<= 1;
                 msb <<= 1;
             }
+            /*************************************************************************************/
+            /******************************** SPRITE RENDERING ***********************************/
+            struct sprite sprite;
+            uint8_t sprite_height, sprite_line;
+
+            // sprite height
+            sprite_height = (TEST_BIT(*ppu.LCDC, 2)) ? 16: 8;
+
+            // loop through each sprite and render them on the current scanline
+            for (int sprite_num = 0; sprite_num < ppu.sprite_count; sprite_num++) {
+                sprite = ppu.sprites[sprite_num];
+
+                uint16_t msb_addr, lsb_addr;
+
+                // test if flipped vertically
+                if (TEST_BIT(sprite.attributes, 6)) {
+                    sprite_line = *ppu.LY % sprite_height;
+                    sprite_line -= 7;
+                    sprite_line *= -1;
+                } else {
+                    sprite_line = *ppu.LY % sprite_height;
+                }
+
+                // get tile from address
+                if (sprite_line < 8) {
+                    // get tile data from first tile for normal sprites
+                    lsb_addr = 0X8000 + sprite.tile_index * 16 + sprite_line * 2 + 0;
+                    msb_addr = 0X8000 + sprite.tile_index * 16 + sprite_line * 2 + 1;
+                } else {
+                    // get tile data from second tile for tall sprites
+                    lsb_addr = 0X8000 + sprite.tile_index * 16 + sprite_line * 2 + 2;
+                    msb_addr = 0X8000 + sprite.tile_index * 16 + sprite_line * 2 + 3;
+                }
+
+                uint8_t lsb = mem_read(lsb_addr);
+                uint8_t msb = mem_read(msb_addr);
+
+                // loop through all the 8 pixels of the fetched sprite
+                for (int pix = -8, pixel; pix > 0; pix++) {
+                    // if the pixel cannot be seen on the screen
+                    if (sprite.x_pos + pix <= 0 && sprite.x_pos + pix > 160)
+                        continue;
+
+                    if (TEST_BIT(sprite.attributes, 5)) {
+                        pixel = (TEST_BIT(msb, 1) << 1) | (TEST_BIT(lsb, 1));
+                    } else {
+                        pixel = (TEST_BIT(msb, 7) << 1) | (TEST_BIT(lsb, 7));
+                    }
+
+                    int colour = get_colour(pixel);
+
+                    // Test priority, the complement of (if the bit is set and the colour is 0) then render
+                    if (!(TEST_BIT(sprite.attributes, 7) && ppu.display[*ppu.LY][sprite.x_pos + pix][0] == 0XFF)) {
+                        ppu.display[*ppu.LY][sprite.x_pos + pix - 1][0] = colour;
+                        ppu.display[*ppu.LY][sprite.x_pos + pix - 1][1] = colour;
+                        ppu.display[*ppu.LY][sprite.x_pos + pix - 1][2] = colour;
+                    }
+
+                    // move the next pixel into place for reading
+                    if (TEST_BIT(sprite.attributes, 5)) {
+                        lsb >>= 1;
+                        msb >>= 1;
+                    } else {
+                        lsb <<= 1;
+                        msb <<= 1;
+                    }
+                }
+            }
+            /*************************************************************************************/
 
             // end of pixel transfer
             // change mode to HBLANK
+            // mem_pixel_transfer(false);
             (*ppu.LCDS) = RESET_BIT(*ppu.LCDS, 0);
             (*ppu.LCDS) = RESET_BIT(*ppu.LCDS, 1);
 
             break;
         }
-        case(HBLANK):
+        case(HBLANK): {
             // increment scanline when all ticks consumed
             if (ppu.ticks >= 456) {
                 (*ppu.LY)++;
                 ppu.ticks = 0;
+
+                // coincidence flag
+                if (*ppu.LY == *ppu.LYC)
+                    (*ppu.LCDS) = SET_BIT(*ppu.LCDS, 2);
 
                 if (*ppu.LY == 144) {
                     // change mode to VBLANK
@@ -188,6 +302,7 @@ void ppu_exec(int cycles) {
                     (*ppu.LCDS) = RESET_BIT(*ppu.LCDS, 1);
 
                     (*ppu.LCDS) = SET_BIT(*ppu.LCDS, 0);
+                    interrupt_request(0b00000001);
                 } else {
                     // change mode to OAM_SEARCH
                     (*ppu.LCDS) = RESET_BIT(*ppu.LCDS, 0);
@@ -195,9 +310,13 @@ void ppu_exec(int cycles) {
 
                     (*ppu.LCDS) = SET_BIT(*ppu.LCDS, 1);
                 }
+
+                ppu.interrupt_requested = TEST_BIT(*ppu.LCDS, 3);
             }
             break;
-        case(VBLANK):
+        }
+        case(VBLANK): {
+
             if (ppu.ticks >= 456) {
                 (*ppu.LY)++;
                 ppu.ticks = 0;
@@ -211,9 +330,14 @@ void ppu_exec(int cycles) {
                     (*ppu.LCDS) = RESET_BIT(*ppu.LCDS, 1);
 
                     (*ppu.LCDS) = SET_BIT(*ppu.LCDS, 1);
+                    ppu.interrupt_requested = TEST_BIT(*ppu.LCDS, 4);
                 }
 
             }
             break;
+        }
     }
+
+    if (ppu.interrupt_requested && ppu.start_mode != (*ppu.LCDC & 0b00000011))
+        interrupt_request(0b00000010);
 }

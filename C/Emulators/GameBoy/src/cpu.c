@@ -3,11 +3,13 @@
 struct cpu cpu;
 
 ////////////////////////////////////////////////////////////////
+//////////////////////// Interface ////////////////////////////
 
 struct cpu *get_cpu() { return &cpu; }
 int cpu_clocks() { return cpu.clock; }
 void cpu_clock_reset() { cpu.clock = 0; }
 bool cpu_IME() { return cpu.IME; }
+bool cpu_HALT() { return cpu.HALT; }
 
 ////////////////////////////////////////////////////////////////
 
@@ -65,6 +67,10 @@ int prefixed();
 
 int cpu_exec() {
     if (cpu.HALT) {
+        if (cpu.IME) {
+            cpu.HALT = false;
+        }
+
         if ((mem_read(mIE) & mem_read(mIF)) != 0) {
             cpu.HALT = false;
         }
@@ -800,7 +806,10 @@ int SRLHL() {
     return 16;
 }
 
-int STOP() {return 0;}
+int STOP() {
+    cpu.PC--;
+    return 0;
+}
 
 int SUB(uint8_t val, bool indirect) {
     uint8_t tmp = cpu.AF.upper - val;

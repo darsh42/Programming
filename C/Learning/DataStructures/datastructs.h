@@ -1,0 +1,6 @@
+#ifndef DATASTRUCTS_H_INCLUDED
+#define DATASTRUCTS_H_INCLUDED
+
+#include "graphs.h"
+
+#endif // DATASTRUCTS_H_INCLUDED

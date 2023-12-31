@@ -32,6 +32,7 @@ struct interrupt_handler {
 */
 extern void cpu_ISR(uint8_t service_routine_addr);
 extern bool cpu_IME();
+extern bool cpu_HALT();
 
 /* Memory functions */
 extern uint8_t *mem_pointer(uint16_t addr);

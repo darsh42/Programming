@@ -1,18 +1,15 @@
-#include "SDL2/SDL.h"
-#include <SDL2/SDL_error.h>
-#include <SDL2/SDL_pixels.h>
-#include <SDL2/SDL_rect.h>
-#include <SDL2/SDL_render.h>
-#include <SDL2/SDL_timer.h>
-#include <SDL2/SDL_video.h>
+#include <math.h>
+#include <raylib.h>
 #define WIDTH 640
 #define HEIGHT 480
 
 #define MAP_WIDTH  16
-#define MAP_HEIGHT  9
+#define MAP_HEIGHT  12
 
-#define ABS(a) (a < 0) ? -a: a;
+#define SECTOR_W (double) WIDTH / MAP_WIDTH
+#define SECTOR_H (double) HEIGHT / MAP_HEIGHT
 
+#define ABS(a) (a < 0) ? -a: a
 
 struct {
     // range 0 - max width or height respective
@@ -31,36 +28,20 @@ int map[MAP_HEIGHT][MAP_WIDTH] =
     {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
     {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
     {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,1},
-    {1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1},
-    {1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1},
-    {1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 };
 
-SDL_Window *win;
-SDL_Renderer *rend;
 
-int main(int argc, char **argv) {
-    int status;
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        fprintf(stderr, "[Error] main.c: Cannot start SDL context, SDL_Error: %s", SDL_GetError());
-        return 1;
-    }
+int render_map() {
+    BeginDrawing();
 
-    if ((win = SDL_CreateWindow("Raycaster", SDL_WINDOWPOS_CENTERED_MASK, SDL_WINDOWPOS_CENTERED_MASK, WIDTH, HEIGHT, SDL_WINDOW_SHOWN)) == NULL) {
-        fprintf(stderr, "[Error] main.c: Cannot create window, SDL_Error: %s", SDL_GetError());
-        return 1;
-    }
-
-    if ((rend = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED)) == NULL) {
-        fprintf(stderr, "[Error] main.c: Cannot create renderer, SDL_Error: %s", SDL_GetError());
-        return 1;
-    }
-
-    SDL_SetRenderDrawColor(rend, 255, 255, 255, SDL_ALPHA_OPAQUE);
-    SDL_RenderClear(rend);
-    SDL_SetRenderDrawColor(rend, 100, 100, 100, SDL_ALPHA_OPAQUE);
     for (int mapY = 0; mapY < MAP_HEIGHT; mapY++) {
         for(int mapX = 0; mapX < MAP_WIDTH; mapX++) {
             if (map[mapY][mapX] == 0) continue;
@@ -69,11 +50,16 @@ int main(int argc, char **argv) {
             int h = HEIGHT / MAP_HEIGHT;
             int x = w * mapX;
             int y = h * mapY;
-            SDL_Rect sector = {x, y, w, h};
-            SDL_RenderFillRect(rend, &sector);
+
+            DrawRectangle(x, y, w, h, BLUE);
         }
     }
 
+    EndDrawing();
+    return 0;
+}
+
+int raycast() {
     // initialize player variables
     player.pos_x = MAP_WIDTH / 2.0;
     player.pos_y = MAP_HEIGHT / 2.0;
@@ -85,13 +71,16 @@ int main(int argc, char **argv) {
      * if the player look direction is positive they are looking into the next sector */
 
     int sector_x = (int) player.pos_x + ((player.dir_x < 0) ? 0: 1);
-    int sector_y = (int) player.pos_y + ((player.dir_y < 0) ? 0: 1);
+    int sector_y = (int) player.pos_y + ((player.dir_y < 0) ? 1: 0);
     double delta_x = ABS(sector_x - player.pos_x);
     double delta_y = ABS(sector_y - player.pos_y);
 
     // how much the x or y line needs to be moved after every step
-    double scaling_x_line = (1 / player.dir_x) * player.dir_y;
-    double scaling_y_line = (1 / player.dir_y) * player.dir_x;
+    double scaling_x_line = (1.0 / player.dir_x) * player.dir_y;
+    double scaling_y_line = (1.0 / player.dir_y) * player.dir_x;
+
+    scaling_x_line = (scaling_x_line > MAP_HEIGHT) ? 0: scaling_x_line;
+    scaling_y_line = (scaling_y_line > MAP_WIDTH) ? 0: scaling_y_line;
 
     // each line has current x and y
     int x_line = sector_x;
@@ -100,6 +89,9 @@ int main(int argc, char **argv) {
 
     int y_line = sector_y;
     double y_line_x = (player.dir_y / delta_y) * player.dir_x;
+
+    x_line_y = ((ABS(x_line_y)) == NAN) ? 0: x_line_y;
+    y_line_x = ((ABS(y_line_x)) == NAN) ? 0: y_line_x;
 
     // while the x and y of each line has not hit a sector containing a wall keep stepping
     while(map[(int) x_line_y][x_line] == 0 || map[y_line][(int) y_line_x] == 0) {
@@ -111,10 +103,25 @@ int main(int argc, char **argv) {
         y_line_x += scaling_y_line;
     }
 
-    SDL_Delay(1000);
-    SDL_DestroyWindow(win);
-    SDL_DestroyRenderer(rend);
-    SDL_Quit();
+    DrawLine(SECTOR_W*player.pos_x, SECTOR_H*player.pos_y, SECTOR_W*x_line, SECTOR_H*x_line_y, GREEN);
+    DrawLine(SECTOR_W*player.pos_x, SECTOR_H*player.pos_y, SECTOR_W*y_line_x, SECTOR_H*y_line, RED);
+
+    return 0;
+}
+
+int main() {
+    InitWindow(WIDTH, HEIGHT, "Raycaster");
+
+    render_map();
+    BeginDrawing();
+
+    raycast();
+
+    EndDrawing();
+    WaitTime(40);
+
+    if (WindowShouldClose())
+        CloseWindow();
 
     return 0;
 }

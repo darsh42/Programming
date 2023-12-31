@@ -1,5 +1,4 @@
 #include "mem.h"
-#include <stdint.h>
 
 struct mem mem;
 
@@ -16,6 +15,8 @@ void mem_init() {
 
     mem.hasROMbanks = false;
     mem.hasRAMbanks = false;
+
+    mem.pixel_transfer = false;
 
     /* Setting High RAM */
     mem.main[0XFF00] = 0XCF; mem.main[0XFF01] = 0X00;
@@ -208,6 +209,10 @@ uint8_t *mem_pointer(uint16_t addr) {
     return &mem.main[addr];
 }
 
+void mem_pixel_transfer(bool on) {
+    mem.pixel_transfer = on;
+}
+
 uint8_t mem_read(uint16_t addr) {
      uint8_t data = 0XFF;
 
@@ -247,9 +252,9 @@ uint8_t mem_read(uint16_t addr) {
          data = mem.main[addr];
      } else if (addr >= 0XFF00 && addr <= 0XFF7F) {
          // I/O Registers
-         // BUG: implemented for testing purposes
+         // BUG: for Tetris testing purposes
+         // if (addr == 0XFF00) printf("%x\n", mem.main[0XFF00]);
          // if (addr == 0XFF44) return 0X90;
-
          data = mem.main[addr];
      } else if (addr >= 0XFF80 && addr <= 0XFFFE) {
          // High RAM
@@ -308,6 +313,8 @@ void mem_write(uint16_t addr, uint8_t data) {
 
     } else if (addr >= 0X8000 && addr <= 0X9FFF) {
         // Video RAM
+        if (mem.pixel_transfer) return;
+
         mem.main[addr] = data;
     } else if (addr >= 0XA000 && addr <= 0XBFFF) {
         // Cartridge RAM
@@ -320,6 +327,8 @@ void mem_write(uint16_t addr, uint8_t data) {
         // Echo RAM, prohibited area by nintendo
     } else if (addr >= 0XFE00 && addr <= 0XFE9F) {
         // Object Attribute Memory
+        if (mem.pixel_transfer) return;
+
         mem.main[addr] = data;
         // mem.main[addr - 0X2000] = data; DONT KNOW WHAT THIS IS
     } else if (addr >= 0XFF00 && addr <= 0XFF7F) {
@@ -332,11 +341,11 @@ void mem_write(uint16_t addr, uint8_t data) {
             for (int i = 0; i < 0XA0; i++)
                 mem_write(0XFE00 + i, mem_read(DMA_transfer_addr + i));
         }
-        // BUG: for testing purposes
-        if (addr == 0XFF01) fprintf(stderr, "%c", data);
+
         if (addr == mIF) return;
         if (addr == mDIV) data = 0;
         if (addr == mLY) data = 0;
+        if (mem.pixel_transfer && addr == mPAL) return;
 
 
         mem.main[addr] = data;

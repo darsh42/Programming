@@ -16,6 +16,21 @@
 
 extern int sdl_render();
 
+struct sprite {
+    /*
+    ** One OAM sprite entry
+    ** y_pos -> stores objects vertical position + 16
+    ** x_pos -> stores objects horizontal position + 8
+    ** tile_index -> stores the tile index of the sprite
+    ** attributes -> stores object attributes
+    */
+    uint8_t y_pos;
+    uint8_t x_pos;
+    uint8_t tile_index;
+    uint8_t attributes;
+};
+
+
 struct ppu {
     /*
     ** Display
@@ -61,24 +76,19 @@ struct ppu {
     */
     uint8_t *LCDS;
 
+    // OAM variables
+    int sprite_count;
+    struct sprite sprites[10];
+
     // Palette
     uint8_t *PAL;
 
-    // Window
-    bool usingWin;
-
-    // misc
-    uint16_t tile_data_base_addr;
-    bool isSigned;
-
-    uint16_t tile_index_base_addr;
-
-    int m_scanline_counter;
-
-
-    // new impl
+    // ppu clock
     int ticks;
-    int pixel;
+
+    // starting ppu render mode
+    uint8_t start_mode;
+    bool interrupt_requested;
 };
 
 /* Interrupt functions */
@@ -87,6 +97,8 @@ void interrupt_request(uint8_t request);
 /* Memory functions */
 extern uint8_t *mem_pointer(uint16_t addr);
 extern uint8_t mem_read(uint16_t addr);
-extern void mem_write(uint16_t addr, uint8_t data);
+extern void mem_pixel_transfer(bool state);
 
+// render function
+extern int sdl_render();
 #endif // PPU_H_INCLUDED

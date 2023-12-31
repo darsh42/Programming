@@ -1,12 +1,27 @@
 #include "debugger.h"
-#include <ctype.h>
-#include <curses.h>
 
 struct debugger debugger;
 static int base_addr = 0;
 static int continue_for = 0;
 static int breakpoint = -1;
-static FILE *log;
+static FILE *GBlog;
+
+void debugger_init() {
+    debugger.cpu = get_cpu();
+    debugger.ppu = get_ppu();
+    debugger.mem = get_mem();
+    debugger.timers = get_timers();
+    debugger.handler = get_handler();
+    debugger.joypad = get_joypad();
+    GBlog = fopen("GAMEBOY.log", "w");
+
+    initscr(); noecho(); curs_set(0);
+}
+
+void debugger_kill() {
+    fclose(GBlog);
+    endwin();
+}
 
 int STR_TO_HEX(char *str) {
     int res = 0;
@@ -39,7 +54,7 @@ void debugger_log_state() {
     uint8_t PC_mem_2 = mem_read(PC+1);
     uint8_t PC_mem_3 = mem_read(PC+2);
     uint8_t PC_mem_4 = mem_read(PC+3);
-    fprintf(log, "A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n", A, F, B, C, D, E, H, L, SP, PC, PC_mem_1, PC_mem_2, PC_mem_3, PC_mem_4);
+    fprintf(GBlog, "A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n", A, F, B, C, D, E, H, L, SP, PC, PC_mem_1, PC_mem_2, PC_mem_3, PC_mem_4);
 }
 
 int debugger_get_addr() {
@@ -59,22 +74,6 @@ void debugger_seek_mem(uint16_t base) {
     }
 
     return;
-}
-
-void debugger_init() {
-    debugger.cpu = get_cpu();
-    debugger.ppu = get_ppu();
-    debugger.mem = get_mem();
-    debugger.timers = get_timers();
-    debugger.handler = get_handler();
-    log = fopen("GAMEBOY.log", "w");
-
-    initscr(); noecho(); curs_set(0);
-}
-
-void debugger_kill() {
-    fclose(log);
-    endwin();
 }
 
 void debugger_flag_print(uint8_t flag, int yStart, char *field) {
@@ -180,10 +179,17 @@ int debugger_update() {
     debugger_seek_mem(base_addr);
 
     // Timer Registers
+    mvprintw(24, 2, "DIV: 0X%02x", *debugger.timers->DIV);
+    mvprintw(25, 2, "TIMA: 0X%02x", *debugger.timers->TIMA);
+    mvprintw(26, 2, "TMA: 0X%02x", *debugger.timers->TMA);
+    mvprintw(27, 2, "TAC: 0X%02x", *debugger.timers->TAC);
 
     // Interrupt Requests
-    debugger_flag_print(*debugger.handler->IF, 25, "INTER REQ:");
-    debugger_flag_print(*debugger.handler->IE, 26, "INTER ENA:");
+    debugger_flag_print(*debugger.handler->IF, 28, "INTER REQ:");
+    debugger_flag_print(*debugger.handler->IE, 29, "INTER ENA:");
+
+    // Joypad Registers
+    debugger_flag_print(*debugger.joypad->JOYP, 30, "JOYPAD:");
 
     int debug_status = 0;
 
