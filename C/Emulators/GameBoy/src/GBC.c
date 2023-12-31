@@ -9,7 +9,7 @@ void gameboy_init() {
     init_handler();
     // apu_init();
 
-    debugger_init();
+    // debugger_init();
 }
 
 int main(int argc, char **argv) {
@@ -28,10 +28,10 @@ int main(int argc, char **argv) {
     while (emulate) {
         while (cpu_clocks() < MAXCYCLES) {
 
-            if (debugger_update() != 0) {
-                emulate = false;
-                break;
-            }
+            // if (debugger_update() != 0) {
+            //     emulate = false;
+            //     break;
+            // }
 
             cycles = cpu_exec();
 
@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
     }
 
 
-    debugger_kill();
+    // debugger_kill();
     sdl_kill();
     return 0;
 }

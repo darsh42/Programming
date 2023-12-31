@@ -111,8 +111,8 @@ int sdl_input() {
         *joypad.JOYP = (joypad.start) ? RESET_BIT(*joypad.JOYP, 3): *joypad.JOYP;
     } else if (!TEST_BIT(*joypad.JOYP, 4)) {
         // Game asking for LEFT/RIGHT/UP/DOWN buttons
-        *joypad.JOYP = (joypad.left) ? RESET_BIT(*joypad.JOYP, 0): *joypad.JOYP;
-        *joypad.JOYP = (joypad.right) ? RESET_BIT(*joypad.JOYP, 1): *joypad.JOYP;
+        *joypad.JOYP = (joypad.right) ? RESET_BIT(*joypad.JOYP, 0): *joypad.JOYP;
+        *joypad.JOYP = (joypad.left) ? RESET_BIT(*joypad.JOYP, 1): *joypad.JOYP;
         *joypad.JOYP = (joypad.up) ? RESET_BIT(*joypad.JOYP, 2): *joypad.JOYP;
         *joypad.JOYP = (joypad.down) ? RESET_BIT(*joypad.JOYP, 3): *joypad.JOYP;
     }

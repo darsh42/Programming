@@ -116,8 +116,8 @@ void ppu_exec(int cycles) {
             break;
         }
         case(PIXEL_TRANSFER_MODE): {
-            // mem_pixel_transfer(true);
             if (ppu.ticks < 376) break;
+            mem_pixel_transfer(true);
             /************************* BACKGROUND AND WINDOW RENDERING ***************************/
             uint8_t tile_line, tile_id, lsb, msb;
             uint16_t tile_map_addr, tile_data_addr;
@@ -280,7 +280,7 @@ void ppu_exec(int cycles) {
 
             // end of pixel transfer
             // change mode to HBLANK
-            // mem_pixel_transfer(false);
+            mem_pixel_transfer(false);
             (*ppu.LCDS) = RESET_BIT(*ppu.LCDS, 0);
             (*ppu.LCDS) = RESET_BIT(*ppu.LCDS, 1);
 
