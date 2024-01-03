@@ -1,8 +1,11 @@
 TODO:
-- Fix CPU
-  - potential issue with flag write routine
-  - verify each opcode using Tetris ROM
-- Fix Display renderer
+- Implement Save files
+- Implement Sound
+- Possible issue with RAM banking
+- Possible issue with PPU window screen
+
+IMPROVEMENTS:
+- ROM and RAM banking as separate arrays for easier indexing
 
 DONE:
 - Create ppu_render_sprites routine
@@ -11,3 +14,10 @@ DONE:
 - Check and Verify memory management routines and ROM/RAM bank switching
 - Create proper start up sequence, set all correct register values and memory locations
 - Create Cartridge header and load ROM correctly
+- Fix CPU
+  - potential issue with flag write routine
+  - verify each opcode using Tetris ROM
+- Fix Display renderer
+  - Sprites seem to have been drawn too much to the right (SML hitboxes)
+  - Sprites dont draw middle pixels when horizontally flipped
+  - SCX is choppy

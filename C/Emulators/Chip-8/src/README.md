@@ -42,3 +42,4 @@ Issues:
 Not Implemented:
 
     - Audio
+    - Currently Rendering using SDL rects, planned to render using SDL textures

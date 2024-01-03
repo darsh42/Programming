@@ -38,6 +38,8 @@
 #define mLY 0XFF44
 #define mLYC 0XFF45
 #define mPAL 0XFF47
+#define mPAL_sp_0 0XFF48
+#define mPAL_sp_1 0XFF49
 
 // DMA transfer location
 #define mDMA 0XFF46

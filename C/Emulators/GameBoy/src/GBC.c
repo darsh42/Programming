@@ -18,9 +18,9 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (mem_cartridge_load(argv+=1) != 0) return 1;
-
     gameboy_init();
+
+    if (mem_cartridge_load(argv+=1) != 0) return 1;
 
     bool emulate = true;
     int cycles = 0;

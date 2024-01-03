@@ -3,12 +3,12 @@
 This is a simple Gameboy Emulator written in C using SDL on Linux
 
 Compiling:
-```
+```makefile
 make release
 ```
 
 Usage:
-```
+```sh
 ./bin/gameboy <gameboy_rom.gb>
 ```
 

@@ -81,7 +81,9 @@ struct ppu {
     struct sprite sprites[10];
 
     // Palette
-    uint8_t *PAL;
+    uint8_t *PAL_bg;
+    uint8_t *PAL_sp_0;
+    uint8_t *PAL_sp_1;
 
     // ppu clock
     int ticks;

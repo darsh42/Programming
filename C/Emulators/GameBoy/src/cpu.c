@@ -67,15 +67,18 @@ int prefixed();
 
 int cpu_exec() {
     if (cpu.HALT) {
+        uint8_t interrupt = mem_read(mIE) & mem_read(mIF);
+        cpu.HALT = false;
+
         if (cpu.IME) {
             cpu.HALT = false;
-        }
-
-        if ((mem_read(mIE) & mem_read(mIF)) != 0) {
+            return 0;
+        } else if (interrupt != 0) {
             cpu.HALT = false;
+        } else {
+            return 1;
         }
 
-        return 0;
     }
 
     int cycles;

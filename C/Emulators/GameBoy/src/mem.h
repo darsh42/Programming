@@ -4,7 +4,7 @@
 #include "common.h"
 #include "cartridge.h"
 
-#define ROM_BANK_SIZE 0X8000
+#define ROM_BANK_SIZE 0X4000
 #define RAM_BANK_SIZE 0X2000
 
 struct mem {

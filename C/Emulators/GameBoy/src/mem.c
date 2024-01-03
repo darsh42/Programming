@@ -163,14 +163,14 @@ int mem_cartridge_load(char **filename) {
     if (mem.cartridge_header.ROM_size != 0X00) {
         // (Banksize << (value + 1)) - base banks
         mem.hasROMbanks = true;
-        int banksize = ROM_BANK_SIZE * (1 << mem.cartridge_header.ROM_size);
+        int banksize = 0X8000 * ((1 << mem.cartridge_header.ROM_size));
         if ((mem.ROMbanks = malloc(banksize * sizeof(uint8_t))) == NULL) {
             fprintf(stderr, "[Error] mem.c: Could malloc ROMbanks\n");
             fclose(rom);
             return 1;
         }
 
-        if ((read_status = fread(mem.main, 1, sizeof(mem.ROMbanks), rom)) == 0) {
+        if ((read_status = fread(mem.ROMbanks, 1, banksize * sizeof(uint8_t), rom)) == 0) {
             fprintf(stderr, "[Error] mem.c: Could not load <%s> memory banks, bytes read: %d\n", *filename, read_status);
             fclose(rom);
             return 1;
@@ -226,7 +226,7 @@ uint8_t mem_read(uint16_t addr) {
              data = mem.main[addr];
          } else {
              // transforming addr to map to ROM banks
-             data = mem.ROMbanks[mem.ROM_bank_number * ROM_BANK_SIZE + addr - 0X4000];
+             data = mem.ROMbanks[(mem.ROM_bank_number - 1) * ROM_BANK_SIZE + addr - 0X8000];
          }
      } else if (addr >= 0X8000 && addr <= 0X9FFF) {
          // Video RAM
@@ -318,8 +318,10 @@ void mem_write(uint16_t addr, uint8_t data) {
         mem.main[addr] = data;
     } else if (addr >= 0XA000 && addr <= 0XBFFF) {
         // Cartridge RAM
-        if (mem.RAM_enabled)
-            mem.RAMbanks[mem.RAM_bank_number * RAM_BANK_SIZE + addr - 0XA000] = data;
+        if (!mem.RAM_enabled) return;
+
+        if (mem.RAM_bank_number == 0X00) mem.main[addr] = data;
+        else                             mem.RAMbanks[(mem.RAM_bank_number - 1) * RAM_BANK_SIZE + addr - 0XA000] = data;
     } else if (addr >= 0XC000 && addr <= 0XDFFF) {
         // Work RAM, CGB mode switchable banks
         mem.main[addr] = data;
