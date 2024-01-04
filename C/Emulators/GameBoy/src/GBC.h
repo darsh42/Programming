@@ -4,8 +4,7 @@
 #include "common.h"
 
 // Load ROM
-extern int mem_load_boot(char **filename);
-extern int mem_cartridge_load(char **filename);
+extern int mem_cartridge_load(char *filename);
 
 // cpu clock handles
 extern int cpu_clocks();
@@ -20,7 +19,7 @@ extern void init_timer();
 extern void init_handler();
 
 // Device Execution functions
-extern int cpu_exec();
+extern  int cpu_exec();
 extern void ppu_exec(int cpu_ticks);
 extern void apu_exec();
 extern void update_timers(int cpu_ticks);

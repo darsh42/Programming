@@ -128,7 +128,6 @@ void ppu_exec(int cycles) {
         case(PIXEL_TRANSFER_MODE): {
             if (ppu.ticks < 376) break;
 
-            mem_pixel_transfer(true);
             /************************* BACKGROUND AND WINDOW RENDERING ***************************/
             uint8_t tile_line, tile_id, lsb, msb;
             uint16_t tile_map_addr, tile_data_addr;
@@ -140,9 +139,10 @@ void ppu_exec(int cycles) {
                 usingWin = true;
 
                 // when window is on set the window tile
-                if (TEST_BIT(*ppu.LCDC, 6)) tile_map_addr = 0X9C00  + ((((uint16_t) *ppu.WY) / 8) & 0XFF) * 32;
-                else                        tile_map_addr = 0X9800  + ((((uint16_t) *ppu.WY) / 8) & 0XFF) * 32;
+                if (TEST_BIT(*ppu.LCDC, 6)) tile_map_addr = 0X9C00  + ((((uint16_t) *ppu.LY - *ppu.WY) / 8) & 0XFF) * 32;
+                else                        tile_map_addr = 0X9800  + ((((uint16_t) *ppu.LY - *ppu.WY) / 8) & 0XFF) * 32;
 
+                tile_line = (*ppu.LY - *ppu.WY) % 8;
             } else {
                 // if not in window use the background tile map
                 usingWin = false;
@@ -151,6 +151,8 @@ void ppu_exec(int cycles) {
                 // From the top left of the sceen (pos of SCY) get the current scanline down
                 if (TEST_BIT(*ppu.LCDC, 3)) tile_map_addr = 0X9C00  + ((((uint8_t) (*ppu.SCY + *ppu.LY))/8) & 0XFF) * 32;
                 else                        tile_map_addr = 0X9800  + ((((uint8_t) (*ppu.SCY + *ppu.LY))/8) & 0XFF) * 32;
+
+                tile_line = (*ppu.SCY + *ppu.LY) % 8;
             }
 
             // get the tile data area
@@ -163,7 +165,6 @@ void ppu_exec(int cycles) {
             }
 
             // set the starting variables
-            tile_line = (*ppu.SCY + *ppu.LY) % 8;
 
             // rendering all pixels on scanline
             for (int pix = 0; pix < 160; pix++) {
@@ -172,7 +173,7 @@ void ppu_exec(int cycles) {
                 uint8_t x_pos = *ppu.SCX + pix;
 
                 // if the rendering is inside of the window get the xoffset from start of window
-                if (usingWin) x_pos = *ppu.WX + pix;
+                if (usingWin) x_pos = pix - *ppu.WX - 7;
 
                 // which 8bit wide tile
                 uint8_t tile_col = (x_pos/8);
@@ -277,7 +278,6 @@ void ppu_exec(int cycles) {
 
             // end of pixel transfer
             // change mode to HBLANK
-            mem_pixel_transfer(false);
             (*ppu.LCDS) = RESET_BIT(*ppu.LCDS, 0);
             (*ppu.LCDS) = RESET_BIT(*ppu.LCDS, 1);
 

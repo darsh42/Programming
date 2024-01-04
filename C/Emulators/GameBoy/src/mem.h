@@ -44,7 +44,12 @@ struct mem {
     */
     struct cartridge_header cartridge_header;
 
-    uint8_t main[0X10000];
+    uint8_t VRAM[0X2000];
+    uint8_t WRAM[0X2000];
+    uint8_t OAM[0X00A0];
+    uint8_t IO[0X80];
+    uint8_t HRAM[0X80];
+    uint8_t IE;
 
     /* Pixel Transfer disables CPU writes to VRAM */
     bool pixel_transfer;

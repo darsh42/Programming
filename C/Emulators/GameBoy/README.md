@@ -24,11 +24,35 @@ Controls:
 | D-Pad Up      | Up Key    |
 | D-Pad Down    | Down Key  |
 
-Issues:
+### TODO:
 
-    - Sprite Rendering is not functioning
-    - Cartridge banking issues
+#### ISSUES:
+- Implement Sound
+- Implement Save files
+- Sprites not properly loading for big games (see Link's Awakening)
+  - Probably a MBC issue (Un-implemented)
+- SCX scrolling is too fast (see Link's Awakening)
 
-Unimplemented features:
+#### FIXED ISSUES:
+- Create "ppu_render_sprites" routine
+- Create LCD Status routine
+- implement all Interrupt service routines
+- Check and Verify memory management routines and ROM/RAM bank switching
+- Create proper start up sequence, set all correct register values and memory locations
+- Create Cartridge header and load ROM correctly
+- Fix Memory
+  - Possible issue with RAM banking
+- Fix CPU
+  - potential issue with flag write routine
+  - verify each opcode using Tetris ROM
+- Fix Display renderer
+  - Possible issue with PPU window screen
+  - Sprites seem to have been drawn too much to the right (SML hitboxes)
+  - Sprites dont draw middle pixels when horizontally flipped
+  - SCX is choppy
 
-    - Audio Processing Unit
+#### IMPROVEMENTS:
+- Add a UI using ImGUI
+
+#### FIXED IMPROVEMENTS:
+- ROM and RAM banking as separate arrays for easier indexing

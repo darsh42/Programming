@@ -19,125 +19,53 @@ void mem_init() {
     mem.pixel_transfer = false;
 
     /* Setting High RAM */
-    mem.main[0XFF00] = 0XCF; mem.main[0XFF01] = 0X00;
-    mem.main[0XFF02] = 0X7E; mem.main[0XFF04] = 0X00;
-    mem.main[0XFF06] = 0X00; mem.main[0XFF07] = 0XF8;
-    mem.main[0XFF0F] = 0XFF; mem.main[0XFF10] = 0X80;
-    mem.main[0XFF11] = 0XBF; mem.main[0XFF12] = 0XF3;
-    mem.main[0XFF13] = 0XFF; mem.main[0XFF14] = 0XBF;
-    mem.main[0XFF16] = 0X3F; mem.main[0XFF17] = 0X00;
-    mem.main[0XFF18] = 0XFF; mem.main[0XFF19] = 0XBF;
-    mem.main[0XFF1A] = 0X7F; mem.main[0XFF1B] = 0XFF;
-    mem.main[0XFF1C] = 0X9F; mem.main[0XFF1D] = 0XFF;
-    mem.main[0XFF1E] = 0XBF; mem.main[0XFF20] = 0XFF;
-    mem.main[0XFF21] = 0X00; mem.main[0XFF22] = 0X00;
-    mem.main[0XFF23] = 0XBF; mem.main[0XFF24] = 0X77;
-    mem.main[0XFF25] = 0XF3; mem.main[0XFF26] = 0XF1;
-    mem.main[0XFF40] = 0X91; mem.main[0XFF41] = 0X85;
-    mem.main[0XFF42] = 0X00; mem.main[0XFF43] = 0X00;
-    mem.main[0XFF44] = 0X00; mem.main[0XFF45] = 0X00;
-    mem.main[0XFF46] = 0XFF; mem.main[0XFF47] = 0XFC;
-    mem.main[0XFF48] = 0X00; mem.main[0XFF49] = 0X00;
-    mem.main[0XFF4A] = 0X00; mem.main[0XFF4B] = 0X00;
-    mem.main[0XFF4D] = 0XFF; mem.main[0XFF4F] = 0XFF;
-    mem.main[0XFF51] = 0XFF; mem.main[0XFF52] = 0XFF;
-    mem.main[0XFF53] = 0XFF; mem.main[0XFF54] = 0XFF;
-    mem.main[0XFF55] = 0XFF; mem.main[0XFF56] = 0XFF;
-    mem.main[0XFF68] = 0XFF; mem.main[0XFF69] = 0XFF;
-    mem.main[0XFF6A] = 0XFF; mem.main[0XFF6B] = 0XFF;
-    mem.main[0XFF70] = 0XFF; mem.main[0XFFFF] = 0X00;
+    mem.IO[0X00] = 0XCF; mem.IO[0X01] = 0X00;
+    mem.IO[0X02] = 0X7E; mem.IO[0X04] = 0X00;
+    mem.IO[0X06] = 0X00; mem.IO[0X07] = 0XF8;
+    mem.IO[0X0F] = 0XFF; mem.IO[0X10] = 0X80;
+    mem.IO[0X11] = 0XBF; mem.IO[0X12] = 0XF3;
+    mem.IO[0X13] = 0XFF; mem.IO[0X14] = 0XBF;
+    mem.IO[0X16] = 0X3F; mem.IO[0X17] = 0X00;
+    mem.IO[0X18] = 0XFF; mem.IO[0X19] = 0XBF;
+    mem.IO[0X1A] = 0X7F; mem.IO[0X1B] = 0XFF;
+    mem.IO[0X1C] = 0X9F; mem.IO[0X1D] = 0XFF;
+    mem.IO[0X1E] = 0XBF; mem.IO[0X20] = 0XFF;
+    mem.IO[0X21] = 0X00; mem.IO[0X22] = 0X00;
+    mem.IO[0X23] = 0XBF; mem.IO[0X24] = 0X77;
+    mem.IO[0X25] = 0XF3; mem.IO[0X26] = 0XF1;
+    mem.IO[0X40] = 0X91; mem.IO[0X41] = 0X85;
+    mem.IO[0X42] = 0X00; mem.IO[0X43] = 0X00;
+    mem.IO[0X44] = 0X00; mem.IO[0X45] = 0X00;
+    mem.IO[0X46] = 0XFF; mem.IO[0X47] = 0XFC;
+    mem.IO[0X48] = 0X00; mem.IO[0X49] = 0X00;
+    mem.IO[0X4A] = 0X00; mem.IO[0X4B] = 0X00;
+    mem.IO[0X4D] = 0XFF; mem.IO[0X4F] = 0XFF;
+    mem.IO[0X51] = 0XFF; mem.IO[0X52] = 0XFF;
+    mem.IO[0X53] = 0XFF; mem.IO[0X54] = 0XFF;
+    mem.IO[0X55] = 0XFF; mem.IO[0X56] = 0XFF;
+    mem.IO[0X68] = 0XFF; mem.IO[0X69] = 0XFF;
+    mem.IO[0X6A] = 0XFF; mem.IO[0X6B] = 0XFF;
+    mem.IO[0X70] = 0XFF; mem.IE = 0X00;
 }
 
 /*
 ** Load GameBoy ROM
 ** Load correct mapper info
 */
-bool cart_has_RAM(uint8_t cart_type) {
+void cart_has_RAM(uint8_t cart_type) {
     switch (cart_type) {
         case(0X02):
         case(0X03):
-            return true;
-        default: return false;
+            mem.hasRAMbanks = true; break;
+        default:
+            mem.hasRAMbanks =  false; break;
     }
 }
 
-int mem_load_boot(char **filename) {
+int mem_cartridge_load(char *filename) {
     FILE *rom;
-
-    if ( (rom = fopen(*(filename), "rb")) == NULL) {
-        fprintf(stderr, "[Error] mem.c: Cannot read rom <%s>\n", *filename);
-        fclose(rom);
-        return 1;
-    }
-
-    int read_status = 0;
-    if ((read_status = fread(&mem.main, 1, 0X8000, rom)) == 0) {
-        fprintf(stderr, "[Error] mem.c: mem_load_boot: Could not read <%s> cartrige header, bytes read: %d\n", *filename, read_status);
-        fclose(rom);
-        return 1;
-    }
-
-    fclose(rom);
-
-
-    mem.main[0X104] = 0XCE;
-    mem.main[0X105] = 0Xed;
-    mem.main[0X106] = 0X66;
-    mem.main[0X107] = 0X66;
-    mem.main[0X108] = 0Xcc;
-    mem.main[0X109] = 0X0d;
-    mem.main[0X10a] = 0X00;
-    mem.main[0X10b] = 0X0b;
-    mem.main[0X10c] = 0X03;
-    mem.main[0X10d] = 0X73;
-    mem.main[0X10e] = 0X00;
-    mem.main[0X10f] = 0X83;
-    mem.main[0X110] = 0X00;
-    mem.main[0X111] = 0X0c;
-    mem.main[0X112] = 0X00;
-    mem.main[0X113] = 0X0d;
-
-    mem.main[0X114] = 0X00;
-    mem.main[0X115] = 0X08;
-    mem.main[0X116] = 0X11;
-    mem.main[0X117] = 0X1f;
-    mem.main[0X118] = 0X88;
-    mem.main[0X119] = 0X89;
-    mem.main[0X11a] = 0X00;
-    mem.main[0X11b] = 0X0e;
-    mem.main[0X11c] = 0Xdc;
-    mem.main[0X11d] = 0Xcc;
-    mem.main[0X11e] = 0X6e;
-    mem.main[0X11f] = 0Xe6;
-    mem.main[0X120] = 0Xdd;
-    mem.main[0X121] = 0Xdd;
-    mem.main[0X122] = 0Xd9;
-    mem.main[0X123] = 0X99;
-
-    mem.main[0X124] = 0XBB;
-    mem.main[0X125] = 0XBB;
-    mem.main[0X126] = 0X67;
-    mem.main[0X127] = 0X63;
-    mem.main[0X128] = 0X6e;
-    mem.main[0X129] = 0X0e;
-    mem.main[0X12a] = 0Xec;
-    mem.main[0X12b] = 0Xcc;
-    mem.main[0X12c] = 0Xdd;
-    mem.main[0X12d] = 0Xdc;
-    mem.main[0X12e] = 0X99;
-    mem.main[0X12f] = 0X9f;
-    mem.main[0X130] = 0Xbb;
-    mem.main[0X131] = 0Xb9;
-    mem.main[0X132] = 0X33;
-    mem.main[0X133] = 0X3e;
-
-    return 0;
-}
-
-int mem_cartridge_load(char **filename) {
-    FILE *rom;
-    if ( (rom = fopen(*(filename), "rb")) == NULL) {
-        fprintf(stderr, "[Error] mem.c: Cannot read rom <%s>\n", *filename);
+    if ( (rom = fopen(filename, "rb")) == NULL) {
+        fprintf(stderr, "[Error] mem.c: Cannot read rom <%s>\n", filename);
         return 1;
     }
 
@@ -146,7 +74,7 @@ int mem_cartridge_load(char **filename) {
     ftell(rom);
     int read_status = 0;
     if ((read_status = fread(&mem.cartridge_header, 1,  sizeof(mem.cartridge_header), rom)) == 0) {
-        fprintf(stderr, "[Error] mem.c: Could not read <%s> cartrige header, bytes read: %d\n", *filename, read_status);
+        fprintf(stderr, "[Error] mem.c: Could not read <%s> cartrige header, bytes read: %d\n", filename, read_status);
         fclose(rom);
         return 1;
     }
@@ -154,46 +82,40 @@ int mem_cartridge_load(char **filename) {
     /* load cartrige */
 
     fseek(rom, 0, SEEK_SET);
-    if ((read_status = fread(mem.main, 1, 0X8000, rom)) == 0) {
-        fprintf(stderr, "[Error] mem.c: Could not load <%s> memory bank 0, bytes read: %d\n", *filename, read_status);
+    // (Banksize << (value + 1)) - base banks
+
+    if (mem.cartridge_header.ROM_size != 0X00)
+        mem.hasROMbanks = true;
+
+    int banksize = 0X8000 * ((1 << mem.cartridge_header.ROM_size));
+    if ((mem.ROMbanks = malloc(banksize * sizeof(uint8_t))) == NULL) {
+        fprintf(stderr, "[Error] mem.c: Could malloc ROMbanks\n");
         fclose(rom);
         return 1;
     }
-    // create memory banks
-    if (mem.cartridge_header.ROM_size != 0X00) {
-        // (Banksize << (value + 1)) - base banks
-        mem.hasROMbanks = true;
-        int banksize = 0X8000 * ((1 << mem.cartridge_header.ROM_size));
-        if ((mem.ROMbanks = malloc(banksize * sizeof(uint8_t))) == NULL) {
-            fprintf(stderr, "[Error] mem.c: Could malloc ROMbanks\n");
-            fclose(rom);
-            return 1;
-        }
 
-        if ((read_status = fread(mem.ROMbanks, 1, banksize * sizeof(uint8_t), rom)) == 0) {
-            fprintf(stderr, "[Error] mem.c: Could not load <%s> memory banks, bytes read: %d\n", *filename, read_status);
-            fclose(rom);
-            return 1;
-        }
+    if ((read_status = fread(mem.ROMbanks, 1, banksize * sizeof(uint8_t), rom)) == 0) {
+        fprintf(stderr, "[Error] mem.c: Could not load <%s> memory banks, bytes read: %d\n", filename, read_status);
+        fclose(rom);
+        return 1;
     }
 
     fclose(rom);
 
     // allocating for RAM banks
-    if (cart_has_RAM(mem.cartridge_header.cartridge_type)) {
-        mem.hasRAMbanks = true;
-        if (mem.cartridge_header.RAM_size >= 0X02 && mem.cartridge_header.RAM_size <= 0X05) {
-            switch(mem.cartridge_header.RAM_size) {
-                case(0X02): mem.RAMbanks = malloc(RAM_BANK_SIZE * 1); break;
-                case(0X03): mem.RAMbanks = malloc(RAM_BANK_SIZE * 4); break;
-                case(0X04): mem.RAMbanks = malloc(RAM_BANK_SIZE * 16); break;
-                case(0X05): mem.RAMbanks = malloc(RAM_BANK_SIZE * 8); break;
-            }
+    cart_has_RAM(mem.cartridge_header.cartridge_type);
 
-            if (mem.RAMbanks == NULL) {
-                fprintf(stderr, "[Error] mem.c: Could malloc RAMbanks\n");
-                return 1;
-            }
+    if (mem.hasRAMbanks) {
+        switch(mem.cartridge_header.RAM_size) {
+            case(0X02): mem.RAMbanks = malloc(RAM_BANK_SIZE * 1); break;
+            case(0X03): mem.RAMbanks = malloc(RAM_BANK_SIZE * 4); break;
+            case(0X04): mem.RAMbanks = malloc(RAM_BANK_SIZE * 16); break;
+            case(0X05): mem.RAMbanks = malloc(RAM_BANK_SIZE * 8); break;
+        }
+
+        if (mem.RAMbanks == NULL) {
+            fprintf(stderr, "[Error] mem.c: Could malloc RAMbanks\n");
+            return 1;
         }
     }
 
@@ -206,78 +128,54 @@ int mem_cartridge_load(char **filename) {
 ** - Used in reading and manipulating memory registers and controls
 */
 uint8_t *mem_pointer(uint16_t addr) {
-    return &mem.main[addr];
-}
+    if (addr <= 0X3FFF) return &mem.ROMbanks[addr];
+    else if (addr >= 0X4000 && addr <= 0X7FFF) {
+        return &mem.ROMbanks[mem.ROM_bank_number * ROM_BANK_SIZE + addr - 0X4000];
+    }
+    else if (addr >= 0X8000 && addr <= 0X9FFF) return &mem.VRAM[addr - 0X8000];
+    else if (addr >= 0XA000 && addr <= 0XBFFF) {
+        if (!mem.RAM_enabled) return NULL;
+        return &mem.RAMbanks[mem.RAM_bank_number * RAM_BANK_SIZE + addr - 0XA000];
+    }
+    else if (addr >= 0XC000 && addr <= 0XDFFF) return &mem.WRAM[addr - 0XC000];
+    else if (addr >= 0XFE00 && addr <= 0XFE9F)  return &mem.OAM[addr - 0XFE00];
+    else if (addr >= 0XFF00 && addr <= 0XFF7F)   return &mem.IO[addr - 0XFF00];
+    else if (addr >= 0XFF80 && addr <= 0XFFFE) return &mem.HRAM[addr - 0XFF80];
+    else if (addr == 0XFFFF) return &mem.IE;
 
-void mem_pixel_transfer(bool on) {
-    mem.pixel_transfer = on;
+    return NULL;
 }
 
 uint8_t mem_read(uint16_t addr) {
      uint8_t data = 0XFF;
 
-     if (addr <= 0X3FFF) {
-         // ROM bank 00
-         data = mem.main[addr];
-     } else if (addr >= 0X4000 && addr <= 0X7FFF) {
-         // ROM bank 01-FF
-         if (!mem.hasROMbanks || mem.ROM_bank_number == 0X01) {
-            // this emulator stores bank 0X01 in main memory
-             data = mem.main[addr];
-         } else {
-             // transforming addr to map to ROM banks
-             data = mem.ROMbanks[(mem.ROM_bank_number - 1) * ROM_BANK_SIZE + addr - 0X8000];
-         }
-     } else if (addr >= 0X8000 && addr <= 0X9FFF) {
-         // Video RAM
-         data = mem.main[addr];
-     } else if (addr >= 0XA000 && addr <= 0XBFFF) {
-         // Cartridge RAM
-         if (mem.RAM_enabled) {
-             if (mem.RAM_bank_number == 0X00) {
-                 data = mem.main[addr];
-             }
-             else {
-                 data = mem.RAMbanks[mem.RAM_bank_number * RAM_BANK_SIZE + addr - 0XA000];
-             }
-         }
-     } else if (addr >= 0XC000 && addr <= 0XDFFF) {
-         // Work RAM, CGB mode switchable banks
-         data = mem.main[addr];
-     } else if (addr >= 0XE000 && addr <= 0XFDFF) {
-         // Echo RAM, prohibited area by nintendo
-         data = mem.main[addr];
-     } else if (addr >= 0XFE00 && addr <= 0XFE9F) {
-         // Object Attribute Memory
-         data = mem.main[addr];
-     } else if (addr >= 0XFF00 && addr <= 0XFF7F) {
-         // I/O Registers
-         // BUG: for Tetris testing purposes
-         // if (addr == 0XFF00) printf("%x\n", mem.main[0XFF00]);
-         // if (addr == 0XFF44) return 0X90;
-         data = mem.main[addr];
-     } else if (addr >= 0XFF80 && addr <= 0XFFFE) {
-         // High RAM
-         data = mem.main[addr];
-     } else {
-         data = mem.main[addr];
+     if (addr <= 0X3FFF) data = mem.ROMbanks[addr];
+     else if (addr >= 0X4000 && addr <= 0X7FFF) {
+         data = mem.ROMbanks[mem.ROM_bank_number * ROM_BANK_SIZE + (addr - 0X4000)];
      }
-
+     else if (addr >= 0X8000 && addr <= 0X9FFF) data = mem.VRAM[addr - 0X8000];
+     else if (addr >= 0XA000 && addr <= 0XBFFF) {
+         if (!mem.RAM_enabled) return data;
+         data = mem.RAMbanks[mem.RAM_bank_number * RAM_BANK_SIZE + addr - 0XA000];
+     }
+     else if (addr >= 0XC000 && addr <= 0XDFFF) data = mem.WRAM[addr - 0XC000];
+     else if (addr >= 0XFE00 && addr <= 0XFE9F)  data = mem.OAM[addr - 0XFE00];
+     else if (addr >= 0XFF00 && addr <= 0XFF7F)   data = mem.IO[addr - 0XFF00];
+     else if (addr >= 0XFF80 && addr <= 0XFFFE) data = mem.HRAM[addr - 0XFF80];
+     else if (addr == 0XFFFF) data = mem.IE;
 
      return data;
  }
 
 void mem_write(uint16_t addr, uint8_t data) {
-
     if (addr <= 0X1FFF) {
         // Enabling RAM bank
-        if (mem.hasRAMbanks && !mem.RAM_enabled) {
-            // enable RAM when 0X0A has been written to range
-            if (data == 0X0A) mem.RAM_enabled = true;
+        // enable RAM when 0X0A has been written to range
+        if (!mem.RAM_enabled && mem.hasRAMbanks && data == 0X0A)
+            mem.RAM_enabled = true;
 
-            return;
-        }
-    } else if (addr >= 0X2000 && addr <= 0X3FFF) {
+    }
+    else if (addr >= 0X2000 && addr <= 0X3FFF) {
         if (mem.hasROMbanks) {
             // ROM bank select for range 0X4000 - 0X7FFF
             // 5-bit RAM banking number
@@ -290,7 +188,8 @@ void mem_write(uint16_t addr, uint8_t data) {
             mem.ROM_bank_number &= 0b11100000;
             mem.ROM_bank_number |= data;
         }
-    } else if (addr >= 0X4000 && addr <= 0X5FFF) {
+    }
+    else if (addr >= 0X4000 && addr <= 0X5FFF) {
         // RAM bank select or ROM bank select extension
         // 2-bit value
 
@@ -302,7 +201,8 @@ void mem_write(uint16_t addr, uint8_t data) {
         } else {
             mem.RAM_bank_number = data;
         }
-    } else if (addr >= 0X6000 && addr <= 0X7FFF) {
+    }
+    else if (addr >= 0X6000 && addr <= 0X7FFF) {
         // ROM/RAM banking mode switch
         data &= 0b00000001;
 
@@ -311,29 +211,16 @@ void mem_write(uint16_t addr, uint8_t data) {
         if (mem.ROM_bank_mode)
             mem.RAM_bank_number = 0X00;
 
-    } else if (addr >= 0X8000 && addr <= 0X9FFF) {
-        // Video RAM
-        if (mem.pixel_transfer) return;
-
-        mem.main[addr] = data;
-    } else if (addr >= 0XA000 && addr <= 0XBFFF) {
+    }
+    else if (addr >= 0X8000 && addr <= 0X9FFF) mem.VRAM[addr - 0X8000] = data;
+    else if (addr >= 0XA000 && addr <= 0XBFFF) {
         // Cartridge RAM
         if (!mem.RAM_enabled) return;
-
-        if (mem.RAM_bank_number == 0X00) mem.main[addr] = data;
-        else                             mem.RAMbanks[(mem.RAM_bank_number - 1) * RAM_BANK_SIZE + addr - 0XA000] = data;
-    } else if (addr >= 0XC000 && addr <= 0XDFFF) {
-        // Work RAM, CGB mode switchable banks
-        mem.main[addr] = data;
-    } else if (addr >= 0XE000 && addr <= 0XFDFF) {
-        // Echo RAM, prohibited area by nintendo
-    } else if (addr >= 0XFE00 && addr <= 0XFE9F) {
-        // Object Attribute Memory
-        if (mem.pixel_transfer) return;
-
-        mem.main[addr] = data;
-        // mem.main[addr - 0X2000] = data; DONT KNOW WHAT THIS IS
-    } else if (addr >= 0XFF00 && addr <= 0XFF7F) {
+        mem.RAMbanks[mem.RAM_bank_number * RAM_BANK_SIZE + addr - 0XA000] = data;
+    }
+    else if (addr >= 0XC000 && addr <= 0XDFFF) mem.WRAM[addr - 0XC000] = data;
+    else if (addr >= 0XFE00 && addr <= 0XFE9F)  mem.OAM[addr - 0XFE00] = data;
+    else if (addr >= 0XFF00 && addr <= 0XFF7F) {
         // I/O Registers
         if (addr == mDMA) {
             // byte specifies start addr of DMA as 0XBB00 where BB is byte
@@ -350,20 +237,10 @@ void mem_write(uint16_t addr, uint8_t data) {
         if (mem.pixel_transfer && addr == mPAL) return;
 
 
-        mem.main[addr] = data;
-    } else if (addr >= 0XFF80 && addr <= 0XFFFE) {
-        // High RAM
-        mem.main[addr] = data;
-    } else {
-        mem.main[addr] = data;
+        mem.IO[addr - 0XFF00] = data;
     }
+    else if (addr >= 0XFF80 && addr <= 0XFFFE) mem.HRAM[addr - 0XFF80] = data;
+    else if (addr == 0XFFFF) mem.IE = data;
+
+    return;
  }
-
-uint8_t mem_checksum() {
-    uint8_t checksum = 0;
-    for (int i = 0x0134; i <= 0x014C; i++) {
-        checksum = checksum - mem_read(i) - 1;
-    }
-
-    return checksum;
-}

@@ -20,11 +20,10 @@ int main(int argc, char **argv) {
 
     gameboy_init();
 
-    if (mem_cartridge_load(argv+=1) != 0) return 1;
+    if (mem_cartridge_load(*(++argv)) != 0) return 1;
 
     bool emulate = true;
     int cycles = 0;
-
     while (emulate) {
         while (cpu_clocks() < MAXCYCLES) {
 
@@ -46,8 +45,8 @@ int main(int argc, char **argv) {
                 break;
             }
         }
-        sdl_render();
         cpu_clock_reset();
+        sdl_render();
     }
 
 
