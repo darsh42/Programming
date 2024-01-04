@@ -272,7 +272,9 @@ void mem_write(uint16_t addr, uint8_t data) {
         switch(mem.MBC) {
             case(1): mem.RAM_enabled = ((data & 0Xf) == 0XA); break;
             case(2): mem.RAM_enabled = ((data & 0Xf) == 0XA); break;
-            case(3): mem.RAM_enabled = ((data & 0Xf) == 0XA); break; mem.RTC_enabled = true; break;
+            case(3):
+                mem.RAM_enabled = ((data & 0Xf) == 0XA);
+                mem.RTC_enabled = true; break;
             case(5): mem.RAM_enabled = ((data & 0Xf) == 0XA); break;
         }
 
@@ -280,30 +282,44 @@ void mem_write(uint16_t addr, uint8_t data) {
     else if (addr >= 0X2000 && addr <= 0X3FFF) {
         if (mem.hasROMbanks) {
             // ROM bank select for range 0X4000 - 0X7FFF
-            // 5-bit RAM banking number
+
 
             switch(mem.MBC) {
                 case(1):
+                    // 5-bit RAM banking number
+                    // bank number of 0X00 is equal to 0X01
+                    if (data == 0X00) data = 0X01;
+
                     data &= 0b00011111;
-                    mem.ROM_bank_number &= 0b11100000; break;
+                    mem.ROM_bank_number &= 0b11100000;
+                    mem.ROM_bank_number |= data;
+                    break;
                 case(2):
                     // RAM and ROM select
                     return;
                 case(3):
+                    // bank number of 0X00 is equal to 0X01
+                    if (data == 0X00) data = 0X01;
+
                     data &= 0b01111111;
-                    mem.ROM_bank_number &= 0b10000000; break;
+                    mem.ROM_bank_number &= 0b10000000;
+                    mem.ROM_bank_number |= data;
+                    break;
                 case(5):
-                    // TODO: issues
-                    if (addr >= 0X2000 && addr <= 0X2FFF) {data &= 0b00001111;} break; // ROM bank LO
-                    if (addr >= 0X3000 && addr <= 0X3FFF) {data &= 0b11110000;} break; // ROM bank HI
+                    if (addr >= 0X2000 && addr <= 0X2FFF) {
+                        data &= 0b11111111;
+                        mem.ROM_bank_number &= 0b100000000;
+                        mem.ROM_bank_number |= data;
+                    }
+                    else if (addr >= 0X3000 && addr <= 0X3FFF)  {
+                        data = TEST_BIT(data, 0);
+                        mem.ROM_bank_number &= 0b011111111;
+                        mem.ROM_bank_number |= data << 8;
+                    }
+
+                    printf("%x\n", mem.ROM_bank_number);
                     break;
             }
-
-            // bank number of 0X00 is equal to 0X01
-            if (data == 0X00) data = 0X01;
-
-            // &= 0b11100000 to save upper 3 bits for extended cart size
-            mem.ROM_bank_number |= data;
         }
     }
     else if (addr >= 0X4000 && addr <= 0X5FFF) {
@@ -328,7 +344,7 @@ void mem_write(uint16_t addr, uint8_t data) {
                     // RTC mapping
                 }
                 break;
-            case(5): break;
+            case(5): mem.RAM_bank_number = data; break;
         }
 
     }
@@ -345,7 +361,7 @@ void mem_write(uint16_t addr, uint8_t data) {
             case(2): break;
             case(3):
                 // RTC register latch
-            case(5): break;
+                break;
         }
 
     }

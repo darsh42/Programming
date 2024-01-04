@@ -63,13 +63,13 @@ struct mem {
     /* Memory Banks */
     bool hasROMbanks;
     bool ROM_bank_mode;
-    uint8_t ROM_bank_number;
+    uint16_t ROM_bank_number;
     uint8_t *ROMbanks;
 
     /* RAM Banks */
     bool hasRAMbanks;
     bool RAM_enabled;
-    uint8_t RAM_bank_number;
+    uint16_t RAM_bank_number;
     uint8_t *RAMbanks;
 };
 
