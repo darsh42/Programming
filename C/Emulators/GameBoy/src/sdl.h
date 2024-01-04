@@ -2,6 +2,7 @@
 #define SDL_H_INCLUDED
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_audio.h>
 #include "common.h"
 
 struct joypad {

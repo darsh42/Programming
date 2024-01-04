@@ -16,8 +16,6 @@ void mem_init() {
     mem.hasROMbanks = false;
     mem.hasRAMbanks = false;
 
-    mem.pixel_transfer = false;
-
     /* Setting High RAM */
     mem.IO[0X00] = 0XCF; mem.IO[0X01] = 0X00;
     mem.IO[0X02] = 0X7E; mem.IO[0X04] = 0X00;
@@ -52,19 +50,78 @@ void mem_init() {
 ** Load GameBoy ROM
 ** Load correct mapper info
 */
-void cart_has_RAM(uint8_t cart_type) {
+
+void cart_MBC(uint8_t cart_type) {
+    mem.hasROMbanks = true;
     switch (cart_type) {
-        case(0X02):
-        case(0X03):
-            mem.hasRAMbanks = true; break;
-        default:
-            mem.hasRAMbanks =  false; break;
+        case(0X00): //ROM ONLY
+            mem.MBC = 00;
+            mem.hasROMbanks = false;
+            break;
+        case(0X01): //MBC1
+            mem.MBC = 01;
+            break;
+        case(0X02): //MBC1+RAM
+            mem.MBC = 01;
+            mem.hasRAMbanks = true;
+            break;
+        case(0X03): //MBC1+RAM+BATTERY
+            mem.MBC = 01;
+            mem.hasBattery = true;
+            mem.hasRAMbanks = true;
+            break;
+        case(0X05): /*MBC2*/ mem.MBC = 02; break;
+        case(0X06): //MBC2+BATTERY
+            mem.MBC = 02;
+            mem.hasBattery = true;
+            break;
+        case(0X0B): //MMM01
+        case(0X0C): //MMM01+RAM
+        case(0X0D): //MMM01+RAM+BATTERY
+        case(0X0F): //MBC3+TIMER+BATTERY
+        case(0X10): //MBC3+TIMER+RAM+BATTERY 
+        case(0X11): //MBC3
+            mem.MBC = 03;
+            break;
+        case(0X12): //MBC3+RAM
+            mem.MBC = 03;
+            mem.hasRAMbanks = true;
+            break;
+        case(0X13): //MBC3+RAM+BATTERY
+            mem.MBC = 03;
+            mem.hasBattery = true;
+            mem.hasRAMbanks = true;
+            break;
+        case(0X19): //MBC5
+            mem.MBC = 05;
+            mem.hasBattery = true;
+            mem.hasRAMbanks = true;
+            break;
+        case(0X1A): //MBC5+RAM
+            mem.MBC = 05;
+            mem.hasRAMbanks = true;
+            break;
+        case(0X1B): //MBC5+RAM+BATTERY
+            mem.MBC = 05;
+            mem.hasBattery = true;
+            mem.hasRAMbanks = true;
+            break;
+        case(0X1C): break; //MBC5+RUMBLE
+        case(0X1D): break; //MBC5+RUMBLE+RAM
+        case(0X1E): break; //MBC5+RUMBLE+RAM+BATTERY
+        case(0X20): break; //MBC6
+        case(0X22): break; //MBC7+SENSOR+RUMBLE+RAM+BATTERY
+        case(0XFC): break; //POCKET CAMERA
+        case(0XFD): break; //BANDAI TAMA5
+        case(0XFE): break; //HuC3
+        case(0XFF): break; //HuC1+RAM+BATTERY
     }
+
 }
 
-int mem_cartridge_load(char *filename) {
+int mem_cartridge_load(char *filename, char *savename) {
     FILE *rom;
-    if ( (rom = fopen(filename, "rb")) == NULL) {
+    if ((rom = fopen(filename, "rb")) == NULL) {
         fprintf(stderr, "[Error] mem.c: Cannot read rom <%s>\n", filename);
         return 1;
     }
@@ -79,15 +136,11 @@ int mem_cartridge_load(char *filename) {
         return 1;
     }
 
+    cart_MBC(mem.cartridge_header.cartridge_type);
     /* load cartrige */
-
     fseek(rom, 0, SEEK_SET);
-    // (Banksize << (value + 1)) - base banks
-
-    if (mem.cartridge_header.ROM_size != 0X00)
-        mem.hasROMbanks = true;
-
     int banksize = 0X8000 * ((1 << mem.cartridge_header.ROM_size));
+
     if ((mem.ROMbanks = malloc(banksize * sizeof(uint8_t))) == NULL) {
         fprintf(stderr, "[Error] mem.c: Could malloc ROMbanks\n");
         fclose(rom);
@@ -103,8 +156,6 @@ int mem_cartridge_load(char *filename) {
     fclose(rom);
 
     // allocating for RAM banks
-    cart_has_RAM(mem.cartridge_header.cartridge_type);
-
     if (mem.hasRAMbanks) {
         switch(mem.cartridge_header.RAM_size) {
             case(0X02): mem.RAMbanks = malloc(RAM_BANK_SIZE * 1); break;
@@ -113,13 +164,58 @@ int mem_cartridge_load(char *filename) {
             case(0X05): mem.RAMbanks = malloc(RAM_BANK_SIZE * 8); break;
         }
 
-        if (mem.RAMbanks == NULL) {
+        if ((mem.RAMbanks = malloc(banksize)) == NULL) {
             fprintf(stderr, "[Error] mem.c: Could malloc RAMbanks\n");
             return 1;
+        }
+
+        if (mem.hasBattery) {
+            FILE *save = fopen(savename, "rb");
+
+            if (save == NULL) {
+                fprintf(stderr, "[Info] mem.c: Could not find save file\n");
+                return 0;
+            }
+
+            if ((read_status = fread(mem.RAMbanks, 1, banksize, save)) == 0) {
+                fprintf(stderr, "[Error] mem.c: Could not load save file\n");
+                fclose(save);
+                return 1;
+            }
+
+            fclose(save);
         }
     }
 
 
+    return 0;
+}
+
+int mem_save(char *filename) {
+    if (!mem.hasBattery) return 0;
+
+    int size;
+    switch(mem.cartridge_header.RAM_size) {
+        case(0X02): size = RAM_BANK_SIZE * 1; break;
+        case(0X03): size = RAM_BANK_SIZE * 4; break;
+        case(0X04): size = RAM_BANK_SIZE * 16; break;
+        case(0X05): size = RAM_BANK_SIZE * 8; break;
+    }
+
+    FILE *save = fopen(filename, "w");
+
+    if (save == NULL) {
+        fprintf(stderr, "[Error] mem.c: Could not create save file\n");
+        return 1;
+    }
+
+    if (fwrite(mem.RAMbanks, 1, size * sizeof(uint8_t), save) == 0) {
+        fprintf(stderr, "[Error] mem.c: Could not save game\n");
+        fclose(save);
+        return 1;
+    }
+
+    fclose(save);
     return 0;
 }
 
@@ -171,21 +267,42 @@ void mem_write(uint16_t addr, uint8_t data) {
     if (addr <= 0X1FFF) {
         // Enabling RAM bank
         // enable RAM when 0X0A has been written to range
-        if (!mem.RAM_enabled && mem.hasRAMbanks && data == 0X0A)
-            mem.RAM_enabled = true;
+        if (!mem.hasRAMbanks || mem.RAM_enabled) return;
+
+        switch(mem.MBC) {
+            case(1): mem.RAM_enabled = ((data & 0Xf) == 0XA); break;
+            case(2): mem.RAM_enabled = ((data & 0Xf) == 0XA); break;
+            case(3): mem.RAM_enabled = ((data & 0Xf) == 0XA); break; mem.RTC_enabled = true; break;
+            case(5): mem.RAM_enabled = ((data & 0Xf) == 0XA); break;
+        }
 
     }
     else if (addr >= 0X2000 && addr <= 0X3FFF) {
         if (mem.hasROMbanks) {
             // ROM bank select for range 0X4000 - 0X7FFF
             // 5-bit RAM banking number
-            data &= 0b00011111;
+
+            switch(mem.MBC) {
+                case(1):
+                    data &= 0b00011111;
+                    mem.ROM_bank_number &= 0b11100000; break;
+                case(2):
+                    // RAM and ROM select
+                    return;
+                case(3):
+                    data &= 0b01111111;
+                    mem.ROM_bank_number &= 0b10000000; break;
+                case(5):
+                    // TODO: issues
+                    if (addr >= 0X2000 && addr <= 0X2FFF) {data &= 0b00001111;} break; // ROM bank LO
+                    if (addr >= 0X3000 && addr <= 0X3FFF) {data &= 0b11110000;} break; // ROM bank HI
+                    break;
+            }
 
             // bank number of 0X00 is equal to 0X01
             if (data == 0X00) data = 0X01;
 
             // &= 0b11100000 to save upper 3 bits for extended cart size
-            mem.ROM_bank_number &= 0b11100000;
             mem.ROM_bank_number |= data;
         }
     }
@@ -193,29 +310,63 @@ void mem_write(uint16_t addr, uint8_t data) {
         // RAM bank select or ROM bank select extension
         // 2-bit value
 
-        data &= 0b00000011;
-        if (mem.ROM_bank_mode) {
-            data <<= 5;
-            mem.ROM_bank_number &= 0b00011111;
-            mem.ROM_bank_number |= data;
-        } else {
-            mem.RAM_bank_number = data;
+        switch(mem.MBC) {
+            case(1):
+                data &= 0b00000011;
+                if (mem.ROM_bank_mode) {
+                    data <<= 5;
+                    mem.ROM_bank_number &= 0b00011111;
+                    mem.ROM_bank_number |= data;
+                } else {
+                    mem.RAM_bank_number = data;
+                }
+                break;
+            case(2): break;
+            case(3):
+                if (data <= 0X3) mem.RAM_bank_number = data;
+                else {
+                    // RTC mapping
+                }
+                break;
+            case(5): break;
         }
+
     }
     else if (addr >= 0X6000 && addr <= 0X7FFF) {
         // ROM/RAM banking mode switch
-        data &= 0b00000001;
+        switch(mem.MBC) {
+            case(1):
+                data &= 0b00000001;
+                mem.ROM_bank_mode = (data == 0);
 
-        mem.ROM_bank_mode = (data == 0);
-
-        if (mem.ROM_bank_mode)
-            mem.RAM_bank_number = 0X00;
+                if (mem.ROM_bank_mode)
+                    mem.RAM_bank_number = 0X00;
+                break;
+            case(2): break;
+            case(3):
+                // RTC register latch
+            case(5): break;
+        }
 
     }
     else if (addr >= 0X8000 && addr <= 0X9FFF) mem.VRAM[addr - 0X8000] = data;
     else if (addr >= 0XA000 && addr <= 0XBFFF) {
         // Cartridge RAM
+
+        switch(mem.MBC) {
+            case(1): break;
+            case(2): break;
+            case(3):
+                if (mem.RTC_enabled) {
+                    // Do stuff
+                    return;
+                }
+                break;
+            case(5): break;
+        }
+
         if (!mem.RAM_enabled) return;
+
         mem.RAMbanks[mem.RAM_bank_number * RAM_BANK_SIZE + addr - 0XA000] = data;
     }
     else if (addr >= 0XC000 && addr <= 0XDFFF) mem.WRAM[addr - 0XC000] = data;
@@ -234,7 +385,6 @@ void mem_write(uint16_t addr, uint8_t data) {
         if (addr == mIF) return;
         if (addr == mDIV) data = 0;
         if (addr == mLY) data = 0;
-        if (mem.pixel_transfer && addr == mPAL) return;
 
 
         mem.IO[addr - 0XFF00] = data;

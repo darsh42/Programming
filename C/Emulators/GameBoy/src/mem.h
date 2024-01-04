@@ -51,8 +51,14 @@ struct mem {
     uint8_t HRAM[0X80];
     uint8_t IE;
 
-    /* Pixel Transfer disables CPU writes to VRAM */
-    bool pixel_transfer;
+    /* MBC stuff */
+    int MBC;
+    bool hasBattery;
+
+    /* MCB3 */
+    uint8_t RTC;
+    uint8_t RTC_latch;
+    bool RTC_enabled;
 
     /* Memory Banks */
     bool hasROMbanks;

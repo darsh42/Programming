@@ -3,18 +3,11 @@
 
 #include "common.h"
 
-#define   SIGNED_ADDR(tile_num)  ((int8_t) tile_num * 16 + 0X8800)
-#define UNSIGNED_ADDR(tile_num) ((uint8_t) tile_num * 16 + 0X8000)
-#define TILEDATA_ADDR(tile_num, mode) (mode) ? SIGNED_ADDR(tile_num): UNSIGNED_ADDR(tile_num)
-#define TILEINDEX_ADDR(a) (a) ? 0X9C00 : 0X9800
-
 #define OAM_ENTRY_SIZE_BYTES 4
 #define OAM_SEARCH_MODE 2
 #define PIXEL_TRANSFER_MODE 3
 #define HBLANK 0
 #define VBLANK 1
-
-extern int sdl_render();
 
 struct sprite {
     /*
@@ -99,8 +92,5 @@ void interrupt_request(uint8_t request);
 /* Memory functions */
 extern uint8_t *mem_pointer(uint16_t addr);
 extern uint8_t mem_read(uint16_t addr);
-extern void mem_pixel_transfer(bool state);
 
-// render function
-extern int sdl_render();
 #endif // PPU_H_INCLUDED

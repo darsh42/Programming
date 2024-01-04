@@ -135,12 +135,12 @@ void ppu_exec(int cycles) {
             int colourBit;
 
             // if within Window
-            if (TEST_BIT(*ppu.LCDC, 5) && *ppu.WY < *ppu.LY) {
+            if (TEST_BIT(*ppu.LCDC, 5) && *ppu.WY <= *ppu.LY) {
                 usingWin = true;
 
                 // when window is on set the window tile
-                if (TEST_BIT(*ppu.LCDC, 6)) tile_map_addr = 0X9C00  + ((((uint16_t) *ppu.LY - *ppu.WY) / 8) & 0XFF) * 32;
-                else                        tile_map_addr = 0X9800  + ((((uint16_t) *ppu.LY - *ppu.WY) / 8) & 0XFF) * 32;
+                if (TEST_BIT(*ppu.LCDC, 6)) tile_map_addr = 0X9C00  + (((uint8_t) *ppu.LY - *ppu.WY) / 8) * 32;
+                else                        tile_map_addr = 0X9800  + (((uint8_t) *ppu.LY - *ppu.WY) / 8) * 32;
 
                 tile_line = (*ppu.LY - *ppu.WY) % 8;
             } else {
@@ -173,7 +173,7 @@ void ppu_exec(int cycles) {
                 uint8_t x_pos = *ppu.SCX + pix;
 
                 // if the rendering is inside of the window get the xoffset from start of window
-                if (usingWin) x_pos = pix - *ppu.WX - 7;
+                if (usingWin) x_pos = pix - *ppu.WX + 7;
 
                 // which 8bit wide tile
                 uint8_t tile_col = (x_pos/8);
@@ -195,8 +195,13 @@ void ppu_exec(int cycles) {
                 }
 
                 // read background bytes;
-                lsb = mem_read(lsb_addr);
-                msb = mem_read(msb_addr);
+                if (!TEST_BIT(*ppu.LCDC, 0)) {
+                    lsb = 0;
+                    msb = 0;
+                } else {
+                    lsb = mem_read(lsb_addr);
+                    msb = mem_read(msb_addr);
+                }
 
 
                 // which pixel from the tile we want
@@ -239,9 +244,9 @@ void ppu_exec(int cycles) {
                 uint8_t msb = mem_read(msb_addr);
 
                  // loop through all the 8 pixels of the fetched sprite
-                 for (int pix = -8, pixel; pix < 0; pix++) {
+                 for (int pix = -7, pixel; pix <= 0; pix++) {
                      // if the pixel cannot be seen on the screen
-                     if (sprite.x_pos + pix <= 0 || sprite.x_pos + pix > 160)
+                     if (sprite.x_pos + pix < 0 || sprite.x_pos + pix > 160)
                          continue;
 
                      // Test if flipped horizontally
@@ -257,10 +262,10 @@ void ppu_exec(int cycles) {
 
                         // Test priority, the complement of (if the bit is set and the colour is 0) then render
                         uint8_t bg_col = get_colour(0, *ppu.PAL_bg);
-                        if (!TEST_BIT(sprite.attributes, 7) || ppu.display[*ppu.LY][sprite.x_pos + pix][0] == bg_col) {
-                            ppu.display[*ppu.LY][sprite.x_pos + pix][0] = colour;
-                            ppu.display[*ppu.LY][sprite.x_pos + pix][1] = colour;
-                            ppu.display[*ppu.LY][sprite.x_pos + pix][2] = colour;
+                        if (!TEST_BIT(sprite.attributes, 7) || ppu.display[*ppu.LY][sprite.x_pos + pix - 1][0] == bg_col) {
+                            ppu.display[*ppu.LY][sprite.x_pos + pix - 1][0] = colour;
+                            ppu.display[*ppu.LY][sprite.x_pos + pix - 1][1] = colour;
+                            ppu.display[*ppu.LY][sprite.x_pos + pix - 1][2] = colour;
                         }
 
                      }

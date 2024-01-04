@@ -13,14 +13,14 @@ void gameboy_init() {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 2) {
+    if (argc < 2) {
         fprintf(stderr, "[Error] GBC.c: Usage ./gameboy <rom>\n");
         return 1;
     }
 
     gameboy_init();
 
-    if (mem_cartridge_load(*(++argv)) != 0) return 1;
+    if (mem_cartridge_load(*(argv + 1), *(argv + 2)) != 0) return 1;
 
     bool emulate = true;
     int cycles = 0;
@@ -41,6 +41,7 @@ int main(int argc, char **argv) {
             handle_interrupts();
 
             if (sdl_input() != 0) {
+                mem_save(*(argv + 2));
                 emulate = false;
                 break;
             }

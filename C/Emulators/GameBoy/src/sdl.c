@@ -9,6 +9,7 @@ struct joypad *get_joypad() {
 SDL_Window *win;
 SDL_Renderer *rend;
 SDL_Texture *screen;
+SDL_Rect scale;
 
 int sdl_init() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -30,6 +31,8 @@ int sdl_init() {
         fprintf(stderr, "[Error] sdl.c: SDL could not make texture, SDL_error: %s\n", SDL_GetError());
         return 1;
     }
+
+    scale = (SDL_Rect) {0, 0, 320, 288};
 
     joypad.JOYP = mem_pointer(0XFF00);
     joypad.A      = false;
@@ -58,7 +61,7 @@ int sdl_render() {
     // Update the screen with display contents
     SDL_UpdateTexture(screen, NULL, get_display(), 160*3);
     // Copy the texture for rendering to screen
-    SDL_RenderCopy(rend, screen, NULL, &(SDL_Rect) {0, 0, 320, 288});
+    SDL_RenderCopy(rend, screen, NULL, &scale);
     // Render the texture to the screen
     SDL_RenderPresent(rend);
     return 0;
