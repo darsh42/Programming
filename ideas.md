@@ -11,3 +11,7 @@ Network creation and analysis tool
 
 Create an Assembler
     Make one for RISC-V 
+
+OS and Microcontroller computer
+    Similair to "wrongdog reckons" Ficus OS/Project
+    

@@ -1,0 +1,22 @@
+BIN	Makefile	/^BIN=player$/
+CC	Makefile	/^CC=gcc$/
+COMMON_H_INCLUDED	common.h	2
+DEBUG	Makefile	/^DEBUG=-g -fsanitize=address$/
+ERROR	common.h	/^#define ERROR(file, func, msg) fprintf(stderr, "[E/
+ERR_PLAYER	player.h	/^#define ERR_PLAYER(V, S, msg)                     /
+FILES	Makefile	/^FILES=player.c utils\/filetypes.c$/
+FLAGS	Makefile	/^FLAGS=-lpulse-simple -lmad$/
+MediaPlayer	player.h	20
+Mplayer	player.c	/^int main(int argc, char **argv) {$/
+PLAYER_H_INCLUDED	player.h	2
+debug	Makefile	/^debug:$/
+device	player.h	28
+error	player.h	31
+file	player.h	22
+location	player.h	25
+player	player.c	3
+spec	player.h	29
+speed	player.h	26
+v	player	160
+volume	player.h	24
+~	player	139

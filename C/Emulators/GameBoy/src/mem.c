@@ -4,7 +4,6 @@ struct mem mem;
 
 struct mem *get_mem() {return &mem;}
 
-/* Initizializes memory and sets High RAM */
 void mem_init() {
     // Set default ROM bank
     mem.ROM_bank_number = 0X01;
@@ -15,6 +14,9 @@ void mem_init() {
 
     mem.hasROMbanks = false;
     mem.hasRAMbanks = false;
+
+    mem.ROMbanks = NULL;
+    mem.RAMbanks = NULL;
 
     /* Setting High RAM */
     mem.IO[0X00] = 0XCF; mem.IO[0X01] = 0X00;
@@ -45,11 +47,6 @@ void mem_init() {
     mem.IO[0X6A] = 0XFF; mem.IO[0X6B] = 0XFF;
     mem.IO[0X70] = 0XFF; mem.IE = 0X00;
 }
-
-/*
-** Load GameBoy ROM
-** Load correct mapper info
-*/
 
 void cart_MBC(uint8_t cart_type) {
     mem.hasROMbanks = true;
@@ -157,19 +154,25 @@ int mem_cartridge_load(char *filename, char *savename) {
 
     // allocating for RAM banks
     if (mem.hasRAMbanks) {
+        size_t RAMsize;
         switch(mem.cartridge_header.RAM_size) {
-            case(0X02): mem.RAMbanks = malloc(RAM_BANK_SIZE * 1); break;
-            case(0X03): mem.RAMbanks = malloc(RAM_BANK_SIZE * 4); break;
-            case(0X04): mem.RAMbanks = malloc(RAM_BANK_SIZE * 16); break;
-            case(0X05): mem.RAMbanks = malloc(RAM_BANK_SIZE * 8); break;
+            case(0X02): RAMsize = RAM_BANK_SIZE * sizeof(uint8_t) * 1; break;
+            case(0X03): RAMsize = RAM_BANK_SIZE * sizeof(uint8_t) * 4; break;
+            case(0X04): RAMsize = RAM_BANK_SIZE * sizeof(uint8_t) * 16; break;
+            case(0X05): RAMsize = RAM_BANK_SIZE * sizeof(uint8_t) * 8; break;
         }
 
-        if ((mem.RAMbanks = malloc(banksize)) == NULL) {
+        if ((mem.RAMbanks = malloc(RAMsize)) == NULL) {
             fprintf(stderr, "[Error] mem.c: Could malloc RAMbanks\n");
             return 1;
         }
 
         if (mem.hasBattery) {
+            if (filename == NULL) {
+                printf("No file given\n");
+                return 0;
+            }
+
             FILE *save = fopen(savename, "rb");
 
             if (save == NULL) {
@@ -194,6 +197,11 @@ int mem_cartridge_load(char *filename, char *savename) {
 int mem_save(char *filename) {
     if (!mem.hasBattery) return 0;
 
+    if (filename == NULL) {
+        printf("No file given\n");
+        return 0;
+    }
+
     int size;
     switch(mem.cartridge_header.RAM_size) {
         case(0X02): size = RAM_BANK_SIZE * 1; break;
@@ -201,6 +209,7 @@ int mem_save(char *filename) {
         case(0X04): size = RAM_BANK_SIZE * 16; break;
         case(0X05): size = RAM_BANK_SIZE * 8; break;
     }
+
 
     FILE *save = fopen(filename, "w");
 
@@ -219,10 +228,6 @@ int mem_save(char *filename) {
     return 0;
 }
 
-/*
-** Gets memory address of location in emulator memory
-** - Used in reading and manipulating memory registers and controls
-*/
 uint8_t *mem_pointer(uint16_t addr) {
     if (addr <= 0X3FFF) return &mem.ROMbanks[addr];
     else if (addr >= 0X4000 && addr <= 0X7FFF) {
@@ -270,28 +275,38 @@ void mem_write(uint16_t addr, uint8_t data) {
         if (!mem.hasRAMbanks || mem.RAM_enabled) return;
 
         switch(mem.MBC) {
-            case(1): mem.RAM_enabled = ((data & 0Xf) == 0XA); break;
-            case(2): mem.RAM_enabled = ((data & 0Xf) == 0XA); break;
+            case(1):
+                if (data == 0X0A) mem.RAM_enabled = true;
+                if (data == 0X00) mem.RAM_enabled = false;
+                break;
+            case(2):
+                if (data == 0X0A) mem.RAM_enabled = true;
+                if (data == 0X00) mem.RAM_enabled = false;
+                break;
             case(3):
-                mem.RAM_enabled = ((data & 0Xf) == 0XA);
-                mem.RTC_enabled = true; break;
-            case(5): mem.RAM_enabled = ((data & 0Xf) == 0XA); break;
+                if (data == 0X0A) mem.RAM_enabled = true;
+                if (data == 0X00) mem.RAM_enabled = false;
+                mem.RTC_enabled = true;
+                break;
+            case(5):
+                if (data == 0X0A) mem.RAM_enabled = true;
+                if (data == 0X00) mem.RAM_enabled = false;
+                break;
         }
 
     }
     else if (addr >= 0X2000 && addr <= 0X3FFF) {
         if (mem.hasROMbanks) {
             // ROM bank select for range 0X4000 - 0X7FFF
-
-
             switch(mem.MBC) {
                 case(1):
                     // 5-bit RAM banking number
+                    data &= 0b00111111;
+
                     // bank number of 0X00 is equal to 0X01
                     if (data == 0X00) data = 0X01;
 
-                    data &= 0b00011111;
-                    mem.ROM_bank_number &= 0b11100000;
+                    mem.ROM_bank_number &= 0b11000000;
                     mem.ROM_bank_number |= data;
                     break;
                 case(2):
@@ -302,8 +317,7 @@ void mem_write(uint16_t addr, uint8_t data) {
                     if (data == 0X00) data = 0X01;
 
                     data &= 0b01111111;
-                    mem.ROM_bank_number &= 0b10000000;
-                    mem.ROM_bank_number |= data;
+                    mem.ROM_bank_number = data;
                     break;
                 case(5):
                     if (addr >= 0X2000 && addr <= 0X2FFF) {
@@ -316,8 +330,6 @@ void mem_write(uint16_t addr, uint8_t data) {
                         mem.ROM_bank_number &= 0b011111111;
                         mem.ROM_bank_number |= data << 8;
                     }
-
-                    printf("%x\n", mem.ROM_bank_number);
                     break;
             }
         }
@@ -331,7 +343,7 @@ void mem_write(uint16_t addr, uint8_t data) {
                 data &= 0b00000011;
                 if (mem.ROM_bank_mode) {
                     data <<= 5;
-                    mem.ROM_bank_number &= 0b00011111;
+                    mem.ROM_bank_number &= 0b00111111;
                     mem.ROM_bank_number |= data;
                 } else {
                     mem.RAM_bank_number = data;
@@ -353,7 +365,7 @@ void mem_write(uint16_t addr, uint8_t data) {
         switch(mem.MBC) {
             case(1):
                 data &= 0b00000001;
-                mem.ROM_bank_mode = (data == 0);
+                mem.ROM_bank_mode = (data != 0);
 
                 if (mem.ROM_bank_mode)
                     mem.RAM_bank_number = 0X00;
@@ -375,15 +387,14 @@ void mem_write(uint16_t addr, uint8_t data) {
             case(3):
                 if (mem.RTC_enabled) {
                     // Do stuff
-                    return;
                 }
                 break;
             case(5): break;
         }
 
         if (!mem.RAM_enabled) return;
-
         mem.RAMbanks[mem.RAM_bank_number * RAM_BANK_SIZE + addr - 0XA000] = data;
+
     }
     else if (addr >= 0XC000 && addr <= 0XDFFF) mem.WRAM[addr - 0XC000] = data;
     else if (addr >= 0XFE00 && addr <= 0XFE9F)  mem.OAM[addr - 0XFE00] = data;
@@ -410,3 +421,8 @@ void mem_write(uint16_t addr, uint8_t data) {
 
     return;
  }
+
+void mem_free() {
+    free(mem.ROMbanks);
+    free(mem.RAMbanks);
+}

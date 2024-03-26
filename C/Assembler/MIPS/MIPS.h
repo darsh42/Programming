@@ -11,6 +11,18 @@
 #define LINEBUF 100
 #define MNEUMONIC_LEN 8
 #define COMMENT '#'
+#define DEFAULT_TOKEN_COUNT 6
+
+typedef struct token {
+    enum {
+        Tmneumonic,
+        Tregister,
+        Timmediate,
+        Tlabel,
+        Tdirective,
+    } token_type;
+    char *token_str;
+} Token_t;
 
 typedef struct ins {
     char *mneumonic;
@@ -21,8 +33,6 @@ typedef struct ins {
     char *arg2;
     int fn_op;
 } ins_t;
-
-ins_t optable[OPCOUNT];
 
 typedef union MachineCode {
 
@@ -61,5 +71,8 @@ typedef struct args {
     int imm;
     int target;
 } args_t;
+
+ins_t optable[OPCOUNT];
+
 
 #endif // MIPS_H_INCLUDED

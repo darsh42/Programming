@@ -1,50 +1,194 @@
 #include "wm.h"
+#include <X11/X.h>
 #include <X11/Xlib.h>
 
-WM_t *wm;
-XWindowAttributes current_window_attrs;
-XEvent current_event;
+struct Manager {
+    Display *display;
 
-int main(void) {
-    wm = malloc(sizeof(WM_t));
+    Window root;
+};
 
-    if (!(wm->dpy = XOpenDisplay(0x0))) return 1;
+/* -------------Function Declarations---------- */
 
-    XGrabKey(wm->dpy, XKeysymToKeycode(wm->dpy, XStringToKeysym("F1")), Mod1Mask,
-            DefaultRootWindow(wm->dpy), True, GrabModeAsync, GrabModeAsync);
-    XGrabButton(wm->dpy, 1, Mod1Mask, DefaultRootWindow(wm->dpy), True,
-                ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
-                GrabModeAsync, GrabModeAsync, None, None);
-    XGrabButton(wm->dpy, 3, Mod1Mask, DefaultRootWindow(wm->dpy), True,
-                ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
-                GrabModeAsync, GrabModeAsync, None, None);
+/* Auxiliary functions */
+int handle_error(struct _XDisplay *display, XErrorEvent *err);
+int handle_WM_detected(struct _XDisplay *display, XErrorEvent *err);
 
-    wm->pointer_state.subwindow = None;
-    for(;;) {
-        XNextEvent(wm->dpy, &current_event);
+/* Manager functions */
+static int manager_init();
+static int manager_kill();
+static void manager_run();
 
-        if (current_event.type == KeyPress && current_event.xkey.subwindow != None)
-            XRaiseWindow(wm->dpy, current_event.xkey.subwindow);
-        else if (current_event.type == ButtonPress && current_event.xkey.subwindow != None) {
-            XGetWindowAttributes(wm->dpy, current_event.xkey.subwindow, &current_window_attrs);
-            wm->pointer_state = current_event.xbutton;
-        }
-        else if (current_event.type == MotionNotify && wm->pointer_state.subwindow != None) {
-            int xdiff = current_event.xbutton.x_root - wm->pointer_state.x_root;
-            int ydiff = current_event.xbutton.y_root - wm->pointer_state.y_root;
+/* Event functions
+ * button press          -> processes any GUI button clicks on frame window          *
+ * client message        ->
+ * configure request     -> used to re-configure size, position border and stacking  *
+ * create notify         -> create new root window child created, new process etc.   *
+ * destroy notify        -> destroy root window child, exit process etc.             *
+ * enter notify          -> cursor enters new window                                 *
+ * expose                ->
+ * focus in              -> focus on different window                                *
+ * key press             -> process any keyboard input                               *
+ * mapping notify        ->                                                          *
+ * mapping request       -> make the window visible, map the window to the display   *
+ * motion notify         ->
+ * property notfiy       ->
+ * reparent notify       -> re-renders the reconfigured frame and child              *
+ * unmap notify          -> hide the window, un-map the window from the display      */
+static void event_button_press(XButtonPressedEvent event);
+static void event_client_message(XClientMessageEvent event);
+static void event_configure_request(XConfigureRequestEvent event);
+static void event_create_notify(XCreateWindowEvent event);
+static void event_destroy_notify(XDestroyWindowEvent event);
+static void event_enter_notify(XEnterWindowEvent event);
+static void event_expose(XExposeEvent event);
+static void event_focus_in(XFocusInEvent event);
+static void event_key_press(XKeyPressedEvent event);
+static void event_mapping_notify(XMappingEvent event);
+static void event_map_request(XMapRequestEvent event);
+static void event_motion_notify(XMotionEvent event);
+static void event_property_notify(XPropertyEvent event);
+static void event_reparent_notify(XReparentEvent event);
+static void event_unmap_notify(XUnmapEvent event);
 
-            XMoveResizeWindow(
-                wm->dpy, current_event.xbutton.subwindow,
-                current_window_attrs.x + (wm->pointer_state.button == 1 ? xdiff : 0),
-                current_window_attrs.y + (wm->pointer_state.button == 1 ? ydiff : 0),
-                MAX(1, current_window_attrs.width + (wm->pointer_state.button == 3 ? xdiff : 0)),
-                MAX(1, current_window_attrs.height + (wm->pointer_state.button == 3 ? ydiff : 0)));
-        }
-        else if(current_event.type == ButtonRelease) {
-            wm->pointer_state.subwindow = None;
-        }
+
+/* Variables */
+static bool running = true;
+static bool WM_detected = false;
+
+static struct Manager manager;
+
+void event_button_press(XButtonPressedEvent event) {
+}
+void event_client_message(XClientMessageEvent event) {
+}
+void event_configure_request(XConfigureRequestEvent event) {
+    XWindowChanges c;
+
+    c.x = event.x;
+    c.y = event.y;
+    c.width = event.width;
+    c.height = event.height;
+    c.sibling = event.above;
+    c.stack_mode = event.detail;
+    c.border_width = event.border_width;
+
+    XConfigureWindow(manager.display, event.window, event.value_mask, &c);
+}
+void event_create_notify(XCreateWindowEvent event) {
+
+}
+void event_destroy_notify(XDestroyWindowEvent event) {
+}
+void event_enter_notify(XEnterWindowEvent event) {
+}
+void event_expose(XExposeEvent event) {
+}
+void event_focus_in(XFocusInEvent event) {
+}
+void event_key_press(XKeyPressedEvent event) {
+}
+void event_mapping_notify(XMappingEvent event) {
+}
+void event_map_request(XMapRequestEvent event) {
+
+}
+void event_motion_notify(XMotionEvent event) {
+}
+void event_property_notify(XPropertyEvent event) {
+}
+void event_reparent_notify(XReparentEvent event) {
+}
+void event_unmap_notify(XUnmapEvent event) {
+}
+
+int handle_WM_detected(struct _XDisplay *display, XErrorEvent *err) {
+    fprintf(stderr, "[Error] wm.c: Another Window Manager is running\n");
+    WM_detected = true;
+    return 0;
+}
+
+int handle_XError(struct _XDisplay *display, XErrorEvent *err) {
+    char exception = ' ';
+    switch (err->request_code) {
+        case X_SetInputFocus:      exception = BadMatch; break;
+        case X_PolyText8:          exception = BadDrawable; break;
+        case X_PolyFillRectangle:  exception = BadDrawable; break;
+        case X_PolySegment:        exception = BadDrawable; break;
+        case X_ConfigureWindow:    exception = BadMatch; break;
+        case X_GrabButton:         exception = BadAccess; break;
+        case X_GrabKey:            exception = BadAccess; break;
+        case X_CopyArea:           exception = BadDrawable; break;
+        default: break;
     }
 
-    free(wm);
+    if (err->error_code == exception)
+        return 0;
+
+    fprintf(stderr, "[Error] wm.c: request code=%d, error code=%d\n", err->request_code, err->error_code);
     return 0;
+}
+
+int manager_init() {
+    if ((manager.display = XOpenDisplay(NULL)) == NULL) {
+
+        return -1;
+    }
+
+    /* Check for current running wm instance */
+    XSetErrorHandler(&handle_WM_detected);
+    XSelectInput(manager.display, manager.root, SubstructureRedirectMask | SubstructureNotifyMask);
+    if (WM_detected) return -1;
+
+    // Clear current XEventList and set to generic error handler
+    XSync(manager.display, 0);
+    XSetErrorHandler(&handle_XError);
+    XSync(manager.display, 0);
+
+    return 0;
+}
+
+
+int manager_create_notif(XCreateWindowEvent event) {
+
+
+    return 0;
+}
+
+int manager_kill() {
+    XCloseDisplay(manager.display);
+    return 0;
+}
+
+void manager_run() {
+    while (running) {
+        XEvent current_event;
+
+        XNextEvent(manager.display, &current_event);
+
+        switch(current_event.type) {
+            case      ButtonPress: event_button_press(current_event.xbutton); break;
+            case    ClientMessage: event_client_message(current_event.xclient); break;
+            case ConfigureRequest: event_configure_request(current_event.xconfigurerequest); break;
+            case     CreateNotify: event_create_notify(current_event.xcreatewindow); break;
+            case    DestroyNotify: event_destroy_notify(current_event.xdestroywindow); break;
+            case      EnterNotify: event_enter_notify(current_event.xcrossing); break;
+            case           Expose: event_expose(current_event.xexpose); break;
+            case          FocusIn: event_focus_in(current_event.xfocus); break;
+            case         KeyPress: event_key_press(current_event.xkey); break;
+            case    MappingNotify: event_mapping_notify(current_event.xmapping); break;
+            case       MapRequest: event_mapping_request(current_event.xmaprequest); break;
+            case     MotionNotify: event_motion_notify(current_event.xmotion); break;
+            case   PropertyNotify: event_property_notify(current_event.xproperty); break;
+            case   ReparentNotify: event_reparent_notify(current_event.xreparent); break;
+            case      UnmapNotify: event_unmap_notify(current_event.xunmap); break;
+            default: break;
+        }
+    }
+}
+
+int main(int argc, char **argv) {
+    manager_init();
+    manager_run();
+    manager_kill();
 }

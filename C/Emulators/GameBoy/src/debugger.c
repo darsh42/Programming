@@ -209,14 +209,5 @@ int debugger_update() {
     refresh();
 
     debugger_log_state();
-    // if (mem_read(0XFF02) == 0X81) {
-    //     char c = mem_read(0XFF01);
-    //     if (isalnum(c) && prevFF01 != c) {
-    //         fprintf(log, "%c", mem_read(0XFF01));
-    //         mem_write(0XFF02, 0);
-    //         prevFF01 = mem_read(0XFF01);
-    //     }
-    // }
-
     return 0;
 }

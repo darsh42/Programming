@@ -4,6 +4,7 @@
 #include "common.h"
 
 // Load ROM
+extern void mem_free();
 extern int mem_save(char *filename);
 extern int mem_cartridge_load(char *filename, char *savename);
 

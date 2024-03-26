@@ -246,7 +246,7 @@ void ppu_exec(int cycles) {
                  // loop through all the 8 pixels of the fetched sprite
                  for (int pix = -7, pixel; pix <= 0; pix++) {
                      // if the pixel cannot be seen on the screen
-                     if (sprite.x_pos + pix < 0 || sprite.x_pos + pix > 160)
+                     if (sprite.x_pos + pix <= 0 || sprite.x_pos + pix > 160)
                          continue;
 
                      // Test if flipped horizontally
@@ -262,10 +262,10 @@ void ppu_exec(int cycles) {
 
                         // Test priority, the complement of (if the bit is set and the colour is 0) then render
                         uint8_t bg_col = get_colour(0, *ppu.PAL_bg);
-                        if (!TEST_BIT(sprite.attributes, 7) || ppu.display[*ppu.LY][sprite.x_pos + pix - 1][0] == bg_col) {
-                            ppu.display[*ppu.LY][sprite.x_pos + pix - 1][0] = colour;
-                            ppu.display[*ppu.LY][sprite.x_pos + pix - 1][1] = colour;
-                            ppu.display[*ppu.LY][sprite.x_pos + pix - 1][2] = colour;
+                        if (!TEST_BIT(sprite.attributes, 7) || ppu.display[*ppu.LY][sprite.x_pos + pix][0] == bg_col) {
+                            ppu.display[*ppu.LY][sprite.x_pos + pix][0] = colour;
+                            ppu.display[*ppu.LY][sprite.x_pos + pix][1] = colour;
+                            ppu.display[*ppu.LY][sprite.x_pos + pix][2] = colour;
                         }
 
                      }

@@ -2,6 +2,7 @@
 #define PPU_H_INCLUDED
 
 #include "common.h"
+#include <unistd.h>
 
 #define OAM_ENTRY_SIZE_BYTES 4
 #define OAM_SEARCH_MODE 2
