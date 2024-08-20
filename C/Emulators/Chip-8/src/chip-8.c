@@ -52,22 +52,23 @@ int main(int argc, char **argv) {
     if (argc == 1) {fprintf(stderr, "[ERROR] chip-8.c: Usage ./chip_8 <program.ch8>\n"); return 1;}
 
     // initialize cpu
-    for (int i = 0; i < 16; i++)         cpu.V[i] = 0;
-    for (int i = 0; i < 16; i++)     cpu.stack[i] = 0;
-    for (int i = 0; i < 128; i++)  cpu.display[i] = 0;
-    for (int i = 0; i < 80; i++) cpu.RAM[i] = fonts[i];
+    for (int i = 0; i < 16;  i++)          cpu.V[i] = 0; // clear all registers
+    for (int i = 0; i < 16;  i++)      cpu.stack[i] = 0; // clear all stack
+    for (int i = 0; i < 128; i++)    cpu.display[i] = 0; // clear all pixels
+    for (int i = 0; i < 80;  i++) cpu.RAM[i] = fonts[i]; // add fonts to the RAM
 
-    cpu.PC  = 0;
-    cpu.I   = 0;
-    cpu.SP  = 0;
-    cpu.DT  = 0;
-    cpu.ST  = 0;
-    cpu.CIR = 0;
+    cpu.PC  = 0;    // set program counter to 0
+    cpu.I   = 0;    // set address register to 0
+    cpu.SP  = 0;    // set stack pointer to 0
+    cpu.DT  = 0;    // set delay timer to 0
+    cpu.ST  = 0;    // set sound timer to 0
+    cpu.CIR = 0;    // set current register counter to 0
 
-    cpu.PC = PRG_START;
-
+    cpu.PC = PRG_START; // set the PC to the first instruction location
+    
+    // read the ROM file from arguments
     FILE *rom;
-    if ( (rom = fopen(*(argv+=1), "rb")) == NULL) {
+    if ((rom = fopen(*++argv, "rb")) == NULL) {
         fprintf(stderr, "[Error] chip-8.c: Cannot read rom <%s>\n", *argv);
         return 1;
     }
@@ -77,18 +78,21 @@ int main(int argc, char **argv) {
         return 1;
     }
     fclose(rom);
-
+    
+    // start the SDL window, renderer and input functionality
     init_display();
+
+    // start the main emulation loop
     while(emulate) {
         // process input
         getkey();
         // retrieve current instruction
         cpu.CIR = (cpu.RAM[cpu.PC++] << 8) | (cpu.RAM[cpu.PC++]);
 
-        // interpret each instruction
-
-        uint8_t *X = &cpu.V[(cpu.CIR & 0X0F00) >> 8];
-        uint8_t *Y = &cpu.V[(cpu.CIR & 0X00F0) >> 4];
+        // interpret each instruction, these can be considered register indentifications
+        // which are integrated into the opcodes defined by the computer, Used as pointers for convinience
+        uint8_t *X = &cpu.V[(cpu.CIR & 0X0F00) >> 8];   // e.g. Register 3(X)NN instruction i.e. byte 3
+        uint8_t *Y = &cpu.V[(cpu.CIR & 0X00F0) >> 4];   // e.g. Register 8X(Y)0 instruction i.e. byte 2
 
         switch((cpu.CIR & 0XF000) >> 12) {
             case(0X0):
