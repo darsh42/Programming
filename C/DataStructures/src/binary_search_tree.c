@@ -1,15 +1,21 @@
-#include "datastructures.h"
+#include "common.h"
 #define COUNT 10
 
-Node *node_create(int value) {
-    Node *node = malloc(sizeof(Node));
+typedef struct BINARY_TREE_NODE {
+    int value;
+    struct BINARY_TREE_NODE *left;
+    struct BINARY_TREE_NODE *right;
+} bt_node_t;
+
+bt_node_t *node_create(int value) {
+    bt_node_t *node = malloc(sizeof(bt_node_t));
     node->value = value;
     node->left  = NULL;
     node->right = NULL;
     return node;
 }
 
-void BSTdelete(Node *root) {
+void BSTdelete(bt_node_t *root) {
     if (root->left != NULL) {
         BSTdelete(root->left);
     }
@@ -19,7 +25,7 @@ void BSTdelete(Node *root) {
     free(root);
 }
 
-Node *BSTinsert(Node *root, int value) {
+bt_node_t *BSTinsert(bt_node_t *root, int value) {
     if (root == NULL) {
         return node_create(value);
     } else if (value < root->value) {
@@ -30,13 +36,13 @@ Node *BSTinsert(Node *root, int value) {
     return root;
 }
 
-void BSTremove(Node *root, int value) {}
+void BSTremove(bt_node_t *root, int value) {}
 
-void BSTsearch(Node *root, Node *result, int value) {}
+void BSTsearch(bt_node_t *root, bt_node_t *result, int value) {}
 
 // Function to print binary tree in 2D
 // It does reverse inorder traversal
-void BSTdisplay(struct Node* root, int space) {
+void BSTdisplay(bt_node_t* root, int space) {
     // Base case
     if (root == NULL)
         return;

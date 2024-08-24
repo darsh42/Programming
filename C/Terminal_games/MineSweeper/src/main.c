@@ -2,12 +2,6 @@
 
 int board[WIDTH][HEIGHT];
 
-/*
-** INPUTS:  **board -> board to generate, w -> width, h -> height
-** RETURNS:
-**        0 - No Error
-**        1 -
-*/
 void board_gen(int **board, int w, int h) {
     srand(time(NULL));
 

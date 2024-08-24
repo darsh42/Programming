@@ -13,6 +13,7 @@
 
 #define EMPTY 0
 #define MINE  1
+#define FLAG  2
 
 #define HIDDEN 0
 
