@@ -1,0 +1,29 @@
+CC := gcc
+
+SOURCES := $(wildcard *.c)
+OBJECTS := $(patsubst %.c,%.o,$(SOURCES))
+TARGET  := psx
+
+LIBRARY := -lpthread -lSDL2
+
+CFLAGS := -g -Wall -Wextra -Wpedantic -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wstrict-overflow=5 -pthread
+
+$(TARGET): $(OBJECTS)
+	$(CC) $(CFLAGS) $^ -o $@ $(LIBRARY) 
+
+%.o: %.c; 
+	$(CC) $(CFLAGS) -c $< -o $@ $(LIBRARY) 
+
+.PHONY: clean run debug
+
+BIOS := SCPH1001.BIN
+GAME := .
+
+clean:
+	rm -rf $(TARGET) $(OBJECTS)
+
+run:
+	./$(TARGET) -b $(BIOS) -g .$(GAME)
+
+debug:
+	gdb -iex "set auto-load safe-path $(shell pwd)" --args ./$(TARGET) -b $(BIOS) -g .$(GAME)
