@@ -6,7 +6,7 @@ TARGET  := psx
 
 LIBRARY := -lpthread -lSDL2
 
-CFLAGS := -g -Wall -Wextra -Wpedantic -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wstrict-overflow=5 -pthread
+CFLAGS := -g -Wall -Wextra -Wpedantic -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wstrict-overflow=5 -pthread -DDEBUG
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBRARY) 
@@ -14,7 +14,7 @@ $(TARGET): $(OBJECTS)
 %.o: %.c; 
 	$(CC) $(CFLAGS) -c $< -o $@ $(LIBRARY) 
 
-.PHONY: clean run debug
+.PHONY: clean run debug stub run_debug all
 
 BIOS := SCPH1001.BIN
 GAME := .
@@ -27,3 +27,5 @@ run:
 
 debug:
 	gdb -iex "set auto-load safe-path $(shell pwd)" --args ./$(TARGET) -b $(BIOS) -g .$(GAME)
+
+

@@ -73,11 +73,7 @@ struct cpu {
     enum cpu_load_delay branch_s;
 };
 
-extern struct cpu cpu;
-
-
 #endif // CPU_PRIVATE
-
 
 extern void *task_cpu( void *ignore );
 

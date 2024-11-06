@@ -11,29 +11,31 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-#define CPU_PRIVATE
-#define CPU_DEBUG
-#include "cpu.h"
+#include "stub.h"
 
+/* system devices */
+#define CPU_PRIVATE
+#define GPU_PRIVATE
+#define DMA_PRIVATE
+#define TIMER_PRIVATE
+#define MEMORY_PRIVATE
+
+#include "cpu.h"
+#include "gpu.h"
+#include "dma.h"
+#include "timer.h"
 #include "memory.h"
 
-#define STUB_PORT            1337
-#define STUB_TYPE            IPPROTO_TCP
-#define STUB_ADDRESS         "127.0.0.1"
-#define STUB_MAX_CONNECTIONS 1
+extern struct cpu cpu;
+extern struct gpu gpu;
+extern struct dma dma;
+extern struct timers timers;
+extern struct memory memory;
 
-#define STUB_PACKET_SIZE 512
-
-#define HASH_TABLE_SIZE 32
-#define HASH_TABLE_HASH(address) ((address) % HASH_TABLE_SIZE)
-
-#define hextoint(c) (((c) <= '9') ? (c) - '0': ((c) <= 'Z') ? (c) - 'A': (c) - 'a')
-
-#define print_stub_error(func, format, ...) print_error("cpu.c", func, format, __VA_ARGS__)
+uint32_t gdb_stub_pause = 1;
 
 pthread_cond_t gdb_stub_notify = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t gdb_stub_mutex = PTHREAD_MUTEX_INITIALIZER;
-uint32_t gdb_stub_pause = 0;
 
 /** All possible main commands of the stub */
 enum GDB_COMMANDS {
@@ -378,6 +380,9 @@ static void gdb_stub_default_response ( void )
 static void gdb_stub_continue ( void )
 { 
     gdb_stub_pause = true;
+    
+    assert(!pthread_cond_broadcast(&gdb_stub_notify));
+
     gdb_stub_default_response();
 }
 
@@ -521,7 +526,7 @@ static void gdb_stub_memory_write ( void )
 static void gdb_stub_quit ( void )
 { 
     running = false;
-    gdb_stub_pause = true;
+    gdb_stub_pause = false;
     gdb_stub_default_response();
 }
 
@@ -544,9 +549,9 @@ static void gdb_stub_register_read_all ( void )
         sprintf(registers, "%08x", __builtin_bswap32(cpu.r[r]));
     }
     
-    // /** retrieve COP0 SR register */
-    // sprintf(registers, "%08x", __builtin_bswap32(cpu.cop0.SR.value));    i+= 8;
-    // registers = &stub.response.data[i];
+    /** retrieve COP0 SR register */
+    sprintf(registers, "%08x", __builtin_bswap32(cpu.cop0[12])); i+= 8;
+    registers = &stub.response.data[i];
 
     /** retrieve Hi and Lo registers */
     sprintf(registers, "%08x", __builtin_bswap32(cpu.hi)); i+= 8;
@@ -554,13 +559,13 @@ static void gdb_stub_register_read_all ( void )
     sprintf(registers, "%08x", __builtin_bswap32(cpu.lo)); i+= 8;
     registers = &stub.response.data[i];
 
-    // /** retrieve COP0 CAUSE registers */
-    // sprintf(registers, "%08x", __builtin_bswap32(cpu.cop0.CAUSE.value)); i+= 8;
-    // registers = &stub.response.data[i];
+    /** retrieve COP0 CAUSE registers */
+    sprintf(registers, "%08x", __builtin_bswap32(cpu.cop0[13])); i+= 8;
+    registers = &stub.response.data[i];
 
-    // /** retrieve COP0 BADV registers */
-    // sprintf(registers, "%08x", __builtin_bswap32(cpu.cop0.BADV.value));  i+= 8;
-    // registers = &stub.response.data[i];
+    /** retrieve COP0 BADV registers */
+    sprintf(registers, "%08x", __builtin_bswap32(cpu.cop0[10]));  i+= 8;
+    registers = &stub.response.data[i];
 
     /** retrieve Pc register */
     sprintf(registers, "%08x", __builtin_bswap32(cpu.pc)); i+= 8;
@@ -848,7 +853,15 @@ void gdb_stub_multiletter ( void )
     }
     
     if (!strncmp(command, "Cont", j))  { } 
-    else if (!strncmp(command, "Cont?", j)) { } 
+    else if (!strncmp(command, "Cont?", j)) { 
+        strcpy(stub.response.data, "vCont;c;s;t;r");
+        stub.response.size = 12;
+    } 
+    else if (!strncmp(command, "CtrlC", j)) {
+        /* pause the emulator */
+        gdb_stub_pause = 1;
+        gdb_stub_default_response();
+    }
     else if (!strncmp(command, "MustReplyEmpty", j)) {
         gdb_stub_default_response();
     } 
@@ -874,7 +887,8 @@ void *task_gdb_stub( void *ignore )
     while ( running )
     {
         /** check breakpoints */
-        gdb_stub_pause = mp_hash_hit();
+        if ( !gdb_stub_pause )
+            gdb_stub_pause = mp_hash_hit();
 
         /** clear buffer contents */
         memset(stub.current.data,  0, STUB_PACKET_SIZE);
@@ -884,8 +898,6 @@ void *task_gdb_stub( void *ignore )
         while ( !gdb_stub_verify_checksum() )
             socket_read( stub.current.data , &stub.current.size , sizeof( stub.current.data ) );
         
-        gdb_stub_pause = 1;
-
         /* process command */
         switch ( gdb_stub_get_command() )
         {
@@ -915,12 +927,11 @@ void *task_gdb_stub( void *ignore )
         
         /* write response to client */
         socket_write( stub.response.data , stub.response.size );
-
-        gdb_stub_pause = 0;
     }
+
+    assert(!pthread_cond_broadcast(&gdb_stub_notify));
     
     /* de initialize gdb stub */
     mp_hash_deinit();
     socket_close();
 }
-

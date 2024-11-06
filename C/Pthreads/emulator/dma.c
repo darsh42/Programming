@@ -52,26 +52,26 @@ pthread_cond_t *write_dma( uint32_t address, uint32_t data )
     {
         case(dma0_mdec_in_madr ): dma.dma0_mdec_in_madr  = data; break;
         case(dma0_mdec_in_brc  ): dma.dma0_mdec_in_brc   = data; break;
-        case(dma0_mdec_in_chcr ): dma.dma0_mdec_in_chcr  = data; notify = &dma_notify; dma.state = CHECK_CHANNEL; break;
+        case(dma0_mdec_in_chcr ): dma.dma0_mdec_in_chcr  = data; notify = &dma_notify; dma.state = DMA_CHECK_CHANNEL; break;
         case(dma1_mdec_out_madr): dma.dma1_mdec_out_madr = data; break;
         case(dma1_mdec_out_brc ): dma.dma1_mdec_out_brc  = data; break;
-        case(dma1_mdec_out_chcr): dma.dma1_mdec_out_chcr = data; notify = &dma_notify; dma.state = CHECK_CHANNEL; break;
+        case(dma1_mdec_out_chcr): dma.dma1_mdec_out_chcr = data; notify = &dma_notify; dma.state = DMA_CHECK_CHANNEL; break;
         case(dma2_gpu_madr     ): dma.dma2_gpu_madr      = data; break;
         case(dma2_gpu_brc      ): dma.dma2_gpu_brc       = data; break;
-        case(dma2_gpu_chcr     ): dma.dma2_gpu_chcr      = data; notify = &dma_notify; dma.state = CHECK_CHANNEL; break;
+        case(dma2_gpu_chcr     ): dma.dma2_gpu_chcr      = data; notify = &dma_notify; dma.state = DMA_CHECK_CHANNEL; break;
         case(dma3_cdrom_madr   ): dma.dma3_cdrom_madr    = data; break;
         case(dma3_cdrom_brc    ): dma.dma3_cdrom_brc     = data; break;
-        case(dma3_cdrom_chcr   ): dma.dma3_cdrom_chcr    = data; notify = &dma_notify; dma.state = CHECK_CHANNEL; break;
+        case(dma3_cdrom_chcr   ): dma.dma3_cdrom_chcr    = data; notify = &dma_notify; dma.state = DMA_CHECK_CHANNEL; break;
         case(dma4_spu_madr     ): dma.dma4_spu_madr      = data; break;
         case(dma4_spu_brc      ): dma.dma4_spu_brc       = data; break;
-        case(dma4_spu_chcr     ): dma.dma4_spu_chcr      = data; notify = &dma_notify; dma.state = CHECK_CHANNEL; break;
+        case(dma4_spu_chcr     ): dma.dma4_spu_chcr      = data; notify = &dma_notify; dma.state = DMA_CHECK_CHANNEL; break;
         case(dma5_pio_madr     ): dma.dma5_pio_madr      = data; break;
         case(dma5_pio_brc      ): dma.dma5_pio_brc       = data; break;
-        case(dma5_pio_chcr     ): dma.dma5_pio_chcr      = data; notify = &dma_notify; dma.state = CHECK_CHANNEL; break;
+        case(dma5_pio_chcr     ): dma.dma5_pio_chcr      = data; notify = &dma_notify; dma.state = DMA_CHECK_CHANNEL; break;
         case(dma6_otc_madr     ): dma.dma6_otc_madr      = data; break;
         case(dma6_otc_brc      ): dma.dma6_otc_brc       = data; break;
-        case(dma6_otc_chcr     ): dma.dma6_otc_chcr      = data; notify = &dma_notify; dma.state = CHECK_CHANNEL; break;
-        case(dpcr              ): dma.dpcr               = data; notify = &dma_notify; dma.state = CHECK_CHANNEL; break;
+        case(dma6_otc_chcr     ): dma.dma6_otc_chcr      = data; notify = &dma_notify; dma.state = DMA_CHECK_CHANNEL; break;
+        case(dpcr              ): dma.dpcr               = data; notify = &dma_notify; dma.state = DMA_CHECK_CHANNEL; break;
         case(dicr              ): dma.dicr               = data; break;
     }
     return notify;
@@ -117,10 +117,10 @@ void dma_check_channels( void )
         case ( DMA5_PIO      ):
         case ( DMA6_OTC      ):
             dma.channel = dev;
-            dma.state   = TRANSFER;
+            dma.state   = DMA_TRANSFER;
             break;
         default: 
-            dma.state = IDLE; 
+            dma.state = DMA_IDLE; 
             break;
     }
 }
@@ -348,7 +348,7 @@ void dma_transfer_data( void )
         }
     }
 
-    dma.state = IDLE;
+    dma.state = DMA_IDLE;
 }
 
 /* only used if external devices need to notify dma without writing to it */
@@ -364,11 +364,11 @@ void *task_dma( void *ignore )
     {
         switch (dma.state)
         {
-            case IDLE:        
+            case DMA_IDLE:        
                 assert(!pthread_cond_wait(&dma_notify, &dma_mutex)); 
                 break;
-            case TRANSFER:      dma_transfer_data();  break;
-            case CHECK_CHANNEL: dma_check_channels(); break;
+            case DMA_TRANSFER:      dma_transfer_data();  break;
+            case DMA_CHECK_CHANNEL: dma_check_channels(); break;
         }
     }
 

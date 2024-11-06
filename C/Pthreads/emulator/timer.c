@@ -7,6 +7,10 @@
 #include "timer.h"
 #include "memory.h"
 
+#ifdef DEBUG
+#include "stub.h"
+#endif
+
 pthread_cond_t system_tick_notify = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t system_tick_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -98,7 +102,7 @@ void *task_timers( void *ignore )
          * timers                                               */
         if ( gdb_stub_pause )
         {
-
+            wait_gdb_stub();
         }
 
 #endif // DEBUG
@@ -109,6 +113,5 @@ void *task_timers( void *ignore )
         
         /* tell all devices to cycle */
         assert(!pthread_cond_broadcast(&system_tick_notify));
-
     }
 }

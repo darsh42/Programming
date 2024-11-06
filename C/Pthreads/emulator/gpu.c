@@ -31,8 +31,8 @@ pthread_cond_t *write_gpu( uint32_t address, uint32_t data )
 {
     switch ( address )
     {
-        case( gp0_gpu_read ): fifo_push(&gpu.gp0, data); gpu.state = PROCESS_GP0; break;
-        case( gp1_gpu_stat ): gpu.gp1 = data;            gpu.state = PROCESS_GP1; break;
+        case( gp0_gpu_read ): fifo_push(&gpu.gp0, data); gpu.state = GPU_PROCESS_GP0; break;
+        case( gp1_gpu_stat ): gpu.gp1 = data;            gpu.state = GPU_PROCESS_GP1; break;
     }
     return &gpu_notify;
 }
@@ -721,12 +721,12 @@ void *task_gpu( void *ignore )
     {
         switch (gpu.state)
         {
-            case IDLE:        
+            case GPU_IDLE:        
                 assert(!pthread_cond_wait(&gpu_notify, &gpu_mutex)); 
                 break;
-            case RENDERING:   gpu_render_frame(); break;
-            case PROCESS_GP0: gpu_process_gp0();  break;
-            case PROCESS_GP1: gpu_process_gp1();  break;
+            case GPU_RENDERING:   gpu_render_frame(); break;
+            case GPU_PROCESS_GP0: gpu_process_gp0();  break;
+            case GPU_PROCESS_GP1: gpu_process_gp1();  break;
         }
     }
 }

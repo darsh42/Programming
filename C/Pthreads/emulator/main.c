@@ -11,7 +11,9 @@
 #include "memory.h"
 #include "system.h"
 
+#ifdef DEBUG
 #include "stub.h"
+#endif
 
 uint32_t running = 1;
 
@@ -61,7 +63,7 @@ int main( int argc , char **argv )
 #ifdef DEBUG
     pthread_t thread_gdbstub;
 
-    assert(!pthread_create(&thread_gdbstub, NULL, task_gdbstub, NULL);
+    assert(!pthread_create(&thread_gdbstub, NULL, task_gdb_stub, NULL));
 #endif // DEBUG
     
     assert(!pthread_create(&thread_system, NULL, task_system, NULL));

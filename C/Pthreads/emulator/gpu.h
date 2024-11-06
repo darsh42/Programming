@@ -12,10 +12,10 @@
 #define PARAMETER(c) (c & 0x00FFFFFF)
 
 enum gpu_state {
-    IDLE,
-    RENDERING,
-    PROCESS_GP0,
-    PROCESS_GP1,
+    GPU_IDLE,
+    GPU_RENDERING,
+    GPU_PROCESS_GP0,
+    GPU_PROCESS_GP1,
 };
 
 union GPUSTAT {

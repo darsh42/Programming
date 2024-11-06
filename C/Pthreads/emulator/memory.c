@@ -111,6 +111,7 @@ void memory_write(uint32_t address, uint32_t data, uint32_t size)
 
          if (physical >= 0x00000000 && physical < 0x00200000) { segment =  memory.ram; physical -= 0x00000000; }
     else if (physical >= 0x1FC00000 && physical < 0x1FC80000) { segment = memory.bios; physical -= 0x1FC00000; }
+    else                                                      { return;                                        }
 
     assert(segment);
     assert(!pthread_rwlock_rdlock(&memory_lock));
@@ -211,6 +212,7 @@ void memory_read(uint32_t address, uint32_t *data, uint32_t size)
 
          if (physical >= 0x00000000 && physical < 0x00200000) { segment =  memory.ram; physical -= 0x00000000; }
     else if (physical >= 0x1FC00000 && physical < 0x1FC80000) { segment = memory.bios; physical -= 0x1FC00000; }
+    else                                                      { return;                                        }
 
     assert(segment);
     assert(!pthread_rwlock_rdlock(&memory_lock));

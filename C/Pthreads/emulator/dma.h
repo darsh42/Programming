@@ -33,9 +33,9 @@ enum dma_direction {
 };
 
 enum dma_state {
-    IDLE,
-    TRANSFER,
-    CHECK_CHANNEL
+    DMA_IDLE,
+    DMA_TRANSFER,
+    DMA_CHECK_CHANNEL
 };
 
 union madr{
