@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #define TIMER_PRIVATE
 #include "timer.h"
@@ -106,6 +107,8 @@ void *task_timers( void *ignore )
         }
 
 #endif // DEBUG
+
+         usleep(20);
 
         timers.t0.current_count++; timer_reset(&timers.t0);
         timers.t1.current_count++; timer_reset(&timers.t1);

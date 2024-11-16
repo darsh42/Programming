@@ -119,17 +119,17 @@ void memory_write(uint32_t address, uint32_t data, uint32_t size)
     switch ( size )
     {
         case 1:
-            *(segment + address + 0) = (uint8_t) (data >>  0);
+            *(segment + physical + 0) = (uint8_t) (data >>  0);
             break;
         case 2:
-            *(segment + address + 0) = (uint8_t) (data >>  0);
-            *(segment + address + 1) = (uint8_t) (data >>  8);
+            *(segment + physical + 0) = (uint8_t) (data >>  0);
+            *(segment + physical + 1) = (uint8_t) (data >>  8);
             break;
         case 4:
-            *(segment + address + 0) = (uint8_t) (data >>  0);
-            *(segment + address + 1) = (uint8_t) (data >>  8);
-            *(segment + address + 2) = (uint8_t) (data >> 16);
-            *(segment + address + 3) = (uint8_t) (data >> 24);
+            *(segment + physical + 0) = (uint8_t) (data >>  0);
+            *(segment + physical + 1) = (uint8_t) (data >>  8);
+            *(segment + physical + 2) = (uint8_t) (data >> 16);
+            *(segment + physical + 3) = (uint8_t) (data >> 24);
             break;
     }
 

@@ -41,6 +41,12 @@ static const char *cop0_register_names[] =
     "prid",
 };
 
+static void cpu_print_instruction( void )
+{
+    printf("pc: %08x | op: %08x rs(%04s): %08x rt(%04s): %08x rd(%04s): %08x shamt: %08x funct: %08x | imm16: %08x imm25: %08x |",
+            cpu.pc, OP, cpu_register_names[RS], reg(RS), cpu_register_names[RT], reg(RT), cpu_register_names[RD], reg(RD), SHAMT, FUNCT, IMM16, IMM25);
+}
+
 static void cpu_branch( void )
 {
     cpu.branch_v = cpu.pc + 4 + (sign16(IMM16) << 2);
@@ -569,8 +575,8 @@ static inline void MFCn(int cop_n)
     // Move From Coprocessor n
     switch (cop_n)
     {
-        case 0x0: reg(RT) = cpu.cop0[RD];
-        case 0x2: reg(RT) = cpu.cop2[RD];
+        case 0x0: reg(RT) = cpu.cop0[RD]; break;
+        case 0x2: reg(RT) = cpu.cop2[RD]; break;
     }
 }
 static inline void CFCn(int cop_n) { running = 0; }
@@ -579,8 +585,8 @@ static inline void MTCn(int cop_n)
     // Move To Coprocessor n
     switch (cop_n)
     {
-        case 0x0: cpu.cop0[RD] = reg(RT);
-        case 0x2: cpu.cop2[RD] = reg(RT);
+        case 0x0: cpu.cop0[RD] = reg(RT); break;
+        case 0x2: cpu.cop2[RD] = reg(RT); break;
     }
 }
 static inline void CTCn(int cop_n) { running = 0; }
@@ -746,8 +752,11 @@ static inline void cpu_execute( void )
             break;
     }
 
-    memory_read(cpu.pc, &cpu.cir, 4); cpu.pc += 4;
-    printf("pc: %08x op: ", cpu.pc);
+    /* read and increment program counter */
+    memory_read(cpu.pc, &cpu.cir, 4);
+
+    cpu_print_instruction();
+
     switch (OP) {
         case 0X00:                       cpu_secondary();        break;
         case 0x01:                       cpu_branch_condition(); break;
@@ -783,7 +792,8 @@ static inline void cpu_execute( void )
             running = 0;
             break;
     }
-
+    
+    cpu.pc  += 4;
     cpu.r[0] = 0;
 }
 

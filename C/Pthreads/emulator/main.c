@@ -58,7 +58,7 @@ int main( int argc , char **argv )
     pthread_t thread_gpu;
     pthread_t thread_dma;
     pthread_t thread_timers;
-    pthread_t thread_system;
+    // pthread_t thread_system;
 
 #ifdef DEBUG
     pthread_t thread_gdbstub;
@@ -66,7 +66,7 @@ int main( int argc , char **argv )
     assert(!pthread_create(&thread_gdbstub, NULL, task_gdb_stub, NULL));
 #endif // DEBUG
     
-    assert(!pthread_create(&thread_system, NULL, task_system, NULL));
+    // assert(!pthread_create(&thread_system, NULL, task_system, NULL));
 
     assert(!pthread_create(&thread_dma,    NULL, task_dma,    NULL));
     assert(!pthread_create(&thread_gpu,    NULL, task_gpu,    NULL));
@@ -78,7 +78,7 @@ int main( int argc , char **argv )
 #endif
     
     /* signal to other threads to kill themselves */
-    pthread_join(thread_system, NULL);
+    // pthread_join(thread_system, NULL);
     pthread_join(thread_cpu,    NULL);
     pthread_join(thread_gpu,    NULL);
     pthread_join(thread_dma,    NULL);
