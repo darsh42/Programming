@@ -1,0 +1,105 @@
+$date
+	Sun Nov 17 17:06:39 2024
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1s
+$end
+$scope module tb_memory $end
+$var wire 16 ! memory_data_read [15:0] $end
+$var reg 1 " clk $end
+$var reg 16 # memory_address [15:0] $end
+$var reg 16 $ memory_data_write [15:0] $end
+$var reg 1 % memory_read $end
+$var reg 1 & memory_write $end
+$scope module mem $end
+$var wire 1 " clk $end
+$var wire 16 ' memory_address [15:0] $end
+$var wire 16 ( memory_data_write [15:0] $end
+$var wire 1 % memory_read $end
+$var wire 1 & memory_write $end
+$var wire 16 ) memory_data_read [15:0] $end
+$var integer 32 * i [31:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+b11111111 *
+b0 )
+b10101001 (
+b1 '
+0&
+0%
+b10101001 $
+b1 #
+0"
+b0 !
+$end
+#1
+1"
+#2
+0"
+#3
+1"
+#4
+0"
+#5
+1"
+#6
+0"
+#7
+1"
+#8
+0"
+#9
+1"
+#10
+0"
+1&
+#11
+1"
+#12
+0"
+#13
+1"
+#14
+0"
+#15
+1"
+#16
+0"
+#17
+1"
+#18
+0"
+#19
+1"
+#20
+b10101001 !
+b10101001 )
+0"
+0&
+1%
+#21
+1"
+#22
+0"
+#23
+1"
+#24
+0"
+#25
+1"
+#26
+0"
+#27
+1"
+#28
+0"
+#29
+1"
+#30
+0"

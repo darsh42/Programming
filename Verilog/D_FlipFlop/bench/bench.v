@@ -1,7 +1,4 @@
-
 module tb_rising_d_flip_flop;
-
-
 /**************************************
 * Creating inputs and outputs         *
 *                                     *
@@ -13,10 +10,12 @@ module tb_rising_d_flip_flop;
 * this allows us to monitor them as   *
 * they change during the test         *
 **************************************/
-reg  clk;   // main clock
-reg  D;     // Data line 
 
-wire Q;     // Flip Flop output
+reg        clk;   // main clock
+reg  [2:0] del;   // delay time
+
+reg        D;     // Data line 
+wire       Q;     // Flip Flop output
 
 /**************************************
 * Create the Design Under Test module *
@@ -24,23 +23,38 @@ wire Q;     // Flip Flop output
 * Allows for testing other modules by *
 * monitoring and changing registers   *
 **************************************/
-dut u0
+
+rising_d_flip_flop rdff
 (
-    .Q (Q),
-    .D (D),
     .clk (clk)
+    .D (D),
+    .Q (Q),
 );
+
+/*************************************
+* Generate the clock signal for the  *
+* bench                              *
+*************************************/
+
+always #10 clk = ~clk;
 
 /*************************************
 * The initial conditions of the test *
 * bench                              *
 *************************************/
+
 initial 
 begin
-    Q <= 0;
-    D <= 0;
-end
+    clk <= 0;
+    D   <= 0;
+    Q   <= 0;
 
-task 
+    #15 D <= 1;
+    for (int i = 0; i < 5; i++)
+    begin
+        delay = $random;
+        #(delay) d <= i;
+    end
+end
 
 endmodule
